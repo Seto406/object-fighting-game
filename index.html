@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kitchen Fighter: Toaster vs Microwave</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="game-container">
+        <!-- UI Overlay -->
+        <div id="ui-layer">
+            <!-- Player 1 Health -->
+            <div class="health-wrapper">
+                <div class="health-bar-bg"></div>
+                <div id="player-health" class="health-bar"></div>
+            </div>
+            <!-- Timer -->
+            <div id="timer">60</div>
+            <!-- Player 2 Health -->
+            <div class="health-wrapper">
+                <div class="health-bar-bg"></div>
+                <div id="enemy-health" class="health-bar"></div>
+            </div>
+        </div>
+
+        <!-- Game Over Text -->
+        <div id="display-text">Press Space to Start</div>
+
+        <!-- Main Menu Overlay -->
+        <div id="main-menu">
+            <h1>Kitchen Fighter</h1>
+            <div class="menu-buttons">
+                <button id="btn-pvp">Player vs Player</button>
+                <button id="btn-cpu">Player vs CPU</button>
+            </div>
+            <p>Controls: P1 (WASD + Space) | P2 (Arrows + Down)</p>
+        </div>
+
+        <canvas id="game-canvas"></canvas>
+    </div>
+
+    <script type="module" src="./src/index.js"></script>
+</body>
+</html>
