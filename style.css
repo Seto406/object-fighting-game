@@ -5,12 +5,13 @@
 }
 
 body {
-    background-color: #222;
+    background: radial-gradient(circle, #2a2a2a 0%, #000 100%);
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
     font-family: 'Press Start 2P', cursive, sans-serif;
+    color: white;
 }
 
 #game-container {
@@ -19,10 +20,11 @@ body {
     width: 1024px;
     height: 576px;
     overflow: hidden;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 255, 255, 0.1);
+    border: 4px solid #444;
 }
 
 canvas {
-    /* border: 4px solid #fff; Removed border to blend with container */
     background-color: #333;
     display: block;
 }
@@ -35,48 +37,82 @@ canvas {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 20px;
+    padding: 0 40px;
     width: 100%;
     z-index: 5;
 }
 
+.player-container {
+    display: flex;
+    flex-direction: column;
+    width: 40%;
+}
+
+#p1-container {
+    align-items: flex-start;
+}
+
+#p2-container {
+    align-items: flex-end;
+}
+
+.player-name {
+    font-size: 14px;
+    color: #fff;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    text-shadow: 2px 2px 0 #000;
+}
+
 .health-wrapper {
     position: relative;
-    width: 40%;
+    width: 100%;
     height: 30px;
     background-color: #881111;
     border: 2px solid white;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.5);
+}
+
+.health-bar-bg {
+    position: absolute;
+    background-color: #c00;
+    width: 100%;
+    height: 100%;
 }
 
 .health-bar {
     position: absolute;
     top: 0;
     bottom: 0;
-    background-color: #44aa44;
+    background: linear-gradient(to bottom, #66cc66, #44aa44);
     width: 100%;
     transition: width 0.2s ease-out;
 }
 
 #player-health {
     left: 0;
+    border-right: 2px solid white;
 }
 
 #enemy-health {
     right: 0;
     left: auto;
+    border-left: 2px solid white;
 }
 
 #timer {
-    background-color: #111;
+    background: radial-gradient(circle, #333, #111);
     color: #fff;
     border: 2px solid #fff;
-    width: 60px;
-    height: 60px;
+    width: 70px;
+    height: 70px;
     display: flex;
     justify-content: center;
     align-items: center;
     font-size: 24px;
     font-weight: bold;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
 #display-text {
@@ -85,35 +121,50 @@ canvas {
     left: 50%;
     transform: translate(-50%, -50%);
     color: white;
-    font-size: 48px;
+    font-size: 64px;
     font-weight: bold;
-    text-shadow: 2px 2px 0 #000;
+    text-shadow: 4px 4px 0 #000, 0 0 20px cyan;
     display: none;
     text-align: center;
     z-index: 20;
     width: 100%;
 }
 
-#main-menu {
+#main-menu, #pause-menu, #game-over-menu {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.9);
-    display: flex;
+    background-color: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(5px);
+    /* display is managed by JS (flex or none) */
     flex-direction: column;
     justify-content: center;
     align-items: center;
     color: white;
     z-index: 100;
+    /* Scanline effect */
+    background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    background-size: 100% 2px, 3px 100%;
 }
 
-#main-menu h1 {
+#main-menu {
+    display: flex;
+}
+
+#pause-menu, #game-over-menu {
+    display: none;
+    z-index: 200;
+}
+
+h1 {
     font-size: 48px;
     margin-bottom: 40px;
     text-shadow: 4px 4px 0 #881111;
     text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 2px;
 }
 
 .menu-buttons {
@@ -125,90 +176,59 @@ canvas {
 .menu-buttons button {
     font-family: 'Press Start 2P', cursive;
     font-size: 16px;
-    padding: 15px 30px;
+    padding: 15px 40px;
     cursor: pointer;
     background-color: #44aa44;
-    border: 4px solid white;
+    border: none;
+    border-bottom: 4px solid #226622;
     color: white;
     text-transform: uppercase;
-    transition: transform 0.1s;
+    transition: all 0.1s;
+    box-shadow: 0 4px 0 #226622;
+    position: relative;
+    top: 0;
 }
 
 .menu-buttons button:hover {
     background-color: #66cc66;
-    transform: scale(1.05);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 #226622;
+}
+
+.menu-buttons button:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #226622;
+    border-bottom: 2px solid #226622;
 }
 
 #main-menu p {
     margin-top: 40px;
-    font-size: 12px;
+    font-size: 10px;
     color: #ccc;
     text-align: center;
-    line-height: 1.5;
+    line-height: 1.8;
+    max-width: 80%;
+    text-shadow: 1px 1px 0 #000;
 }
 
 #pause-btn {
     position: absolute;
-    top: 90px;
+    top: 100px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
-    background-color: transparent;
+    background-color: rgba(0,0,0,0.5);
     border: 2px solid white;
     color: white;
     font-family: 'Press Start 2P', cursive;
-    font-size: 10px;
-    padding: 5px 10px;
+    font-size: 12px;
+    padding: 8px 16px;
     cursor: pointer;
     text-transform: uppercase;
-    /* Initially hidden via inline style, managed by JS */
+    border-radius: 4px;
 }
 
 #pause-btn:hover {
     background-color: white;
     color: black;
-}
-
-#pause-menu {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
-    display: none;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    color: white;
-    z-index: 200;
-}
-
-#pause-menu h1 {
-    font-size: 48px;
-    margin-bottom: 40px;
-    text-shadow: 4px 4px 0 #881111;
-    text-align: center;
-}
-
-#game-over-menu {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.9);
-    display: none;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    color: white;
-    z-index: 200;
-}
-
-#game-over-menu h1 {
-    font-size: 48px;
-    margin-bottom: 40px;
-    text-shadow: 4px 4px 0 #881111;
-    text-align: center;
 }

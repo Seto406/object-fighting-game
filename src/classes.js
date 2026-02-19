@@ -1,22 +1,48 @@
 import { GRAVITY } from './constants.js';
 
 export class Projectile {
-  constructor({ position, velocity, color = 'red', width = 20, height = 10 }) {
+  constructor({ position, velocity, color = 'red', width = 20, height = 10, type = 'normal' }) {
     this.position = position;
     this.velocity = velocity;
     this.color = color;
     this.width = width;
     this.height = height;
+    this.type = type;
     this.attackBox = {
         position: this.position,
         width: this.width,
         height: this.height
     };
+    this.timer = 0;
   }
 
   draw(c) {
-    c.fillStyle = this.color;
-    c.fillRect(this.position.x, this.position.y, this.width, this.height);
+    this.timer++;
+    if (this.type === 'toast') {
+        c.fillStyle = '#f4d03f'; // Toast color
+        c.fillRect(this.position.x, this.position.y, this.width, this.height);
+        c.strokeStyle = '#d4ac0d';
+        c.lineWidth = 2;
+        c.strokeRect(this.position.x, this.position.y, this.width, this.height);
+        // Crust
+        c.fillStyle = '#b7950b';
+        c.fillRect(this.position.x + 5, this.position.y + 2, this.width - 10, this.height - 4);
+    } else if (this.type === 'wave') {
+        c.strokeStyle = 'cyan';
+        c.lineWidth = 3;
+        c.beginPath();
+        c.arc(this.position.x + this.width / 2, this.position.y + this.height / 2, this.height, -Math.PI / 2, Math.PI / 2, this.velocity.x < 0);
+        c.stroke();
+
+        c.strokeStyle = 'white';
+        c.lineWidth = 1;
+        c.beginPath();
+        c.arc(this.position.x + this.width / 2, this.position.y + this.height / 2, this.height - 5, -Math.PI / 2, Math.PI / 2, this.velocity.x < 0);
+        c.stroke();
+    } else {
+        c.fillStyle = this.color;
+        c.fillRect(this.position.x, this.position.y, this.width, this.height);
+    }
   }
 
   update(c) {
@@ -27,7 +53,7 @@ export class Projectile {
 }
 
 export class Particle {
-  constructor({ position, velocity, radius, color = 'red', fades = true }) {
+  constructor({ position, velocity, radius, color = 'red', fades = true, type = 'normal' }) {
     this.position = position;
     this.velocity = velocity;
     this.radius = radius;
@@ -35,16 +61,31 @@ export class Particle {
     this.opacity = 1;
     this.fades = fades;
     this.ttl = 0;
+    this.type = type;
   }
 
   draw(c) {
     c.save();
     c.globalAlpha = this.opacity;
-    c.beginPath();
-    c.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2, false);
-    c.fillStyle = this.color;
-    c.fill();
-    c.closePath();
+
+    if (this.type === 'crumb') {
+        c.fillStyle = '#8B4513';
+        c.fillRect(this.position.x, this.position.y, this.radius * 2, this.radius * 2);
+    } else if (this.type === 'spark') {
+        c.strokeStyle = 'white';
+        c.lineWidth = 2;
+        c.beginPath();
+        c.moveTo(this.position.x, this.position.y);
+        c.lineTo(this.position.x + this.velocity.x * 2, this.position.y + this.velocity.y * 2);
+        c.stroke();
+    } else {
+        c.beginPath();
+        c.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2, false);
+        c.fillStyle = this.color;
+        c.fill();
+        c.closePath();
+    }
+
     c.restore();
   }
 
@@ -164,6 +205,7 @@ export class Fighter extends Sprite {
     this.dashTimer = 0;
     this.isStunned = false;
     this.stunTimer = 0;
+    this.projectileType = 'normal';
 
     if (this.sprites) {
       for (const sprite in this.sprites) {
@@ -338,7 +380,8 @@ export class Fighter extends Sprite {
         velocity: { x: velocityX, y: 0 },
         color: this.projectileColor || 'black',
         width: 40,
-        height: 10
+        height: 10,
+        type: this.projectileType
     });
     this.projectiles.push(projectile);
 
@@ -354,6 +397,7 @@ export class Toaster extends Fighter {
     this.width = 60; // Slightly wider
     this.height = 100; // Shorter
     this.projectileColor = '#DAA520'; // Golden toast
+    this.projectileType = 'toast';
   }
 
   draw(c) {
@@ -379,6 +423,12 @@ export class Toaster extends Fighter {
     c.fillStyle = '#333';
     c.fillRect(15, 0, 10, 20);
     c.fillRect(35, 0, 10, 20);
+
+    // Coil Glow
+    const glow = Math.sin(Date.now() / 100) * 0.5 + 0.5;
+    c.fillStyle = `rgba(255, 69, 0, ${glow})`;
+    c.fillRect(17, 2, 6, 16);
+    c.fillRect(37, 2, 6, 16);
 
     // Draw Lever
     c.fillStyle = '#000';
@@ -419,6 +469,7 @@ export class Microwave extends Fighter {
     this.width = 80; // Wider
     this.height = 100; // Shorter
     this.projectileColor = '#00FFFF'; // Cyan wave
+    this.projectileType = 'wave';
   }
 
   draw(c) {
@@ -443,6 +494,18 @@ export class Microwave extends Fighter {
     // Draw Window
     c.fillStyle = '#222';
     c.fillRect(5, 15, this.width - 25, this.height - 30);
+
+    // Turntable
+    c.fillStyle = '#444';
+    c.beginPath();
+    c.ellipse(30, 70, 20, 5, 0, 0, Math.PI * 2);
+    c.fill();
+
+    // Light inside
+    if (Math.random() > 0.9) {
+        c.fillStyle = 'rgba(255, 255, 200, 0.1)';
+        c.fillRect(5, 15, this.width - 25, this.height - 30);
+    }
 
     // Draw Control Panel
     c.fillStyle = '#CCC';

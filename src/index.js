@@ -1,5 +1,5 @@
 import { Toaster, Microwave, Particle } from './classes.js';
-import { rectangularCollision, determineWinner } from './utils.js';
+import { rectangularCollision, determineWinner, drawBackground } from './utils.js';
 import { GRAVITY } from './constants.js';
 
 const canvas = document.querySelector('canvas');
@@ -18,6 +18,7 @@ let timer = 60;
 let timerId;
 
 const particles = [];
+let screenshake = { x: 0, y: 0, intensity: 0 };
 
 // Player 1 (Toaster)
 const player = new Toaster({
@@ -152,25 +153,32 @@ document.querySelector('#btn-home').addEventListener('click', backToMenu);
 function animate() {
   window.requestAnimationFrame(animate);
 
-  // Background
-  c.fillStyle = '#FFE4B5';
-  c.fillRect(0, 0, canvas.width, canvas.height);
-  c.fillStyle = '#8B4513';
-  c.fillRect(0, canvas.height - 96, canvas.width, 96);
+  // Screenshake update
+  if (screenshake.intensity > 0) {
+      screenshake.x = (Math.random() - 0.5) * screenshake.intensity;
+      screenshake.y = (Math.random() - 0.5) * screenshake.intensity;
+      screenshake.intensity *= 0.9;
+      if (screenshake.intensity < 0.5) screenshake.intensity = 0;
+  } else {
+      screenshake.x = 0;
+      screenshake.y = 0;
+  }
 
-  c.strokeStyle = '#DEB887';
-  c.lineWidth = 2;
-  for(let i=0; i<canvas.width; i+=50) {
-      c.beginPath(); c.moveTo(i, 0); c.lineTo(i, canvas.height - 96); c.stroke();
-  }
-  for(let j=0; j<canvas.height - 96; j+=50) {
-      c.beginPath(); c.moveTo(0, j); c.lineTo(canvas.width, j); c.stroke();
-  }
+  // Clear canvas before shake to avoid trails
+  c.fillStyle = 'black';
+  c.fillRect(0, 0, canvas.width, canvas.height);
+
+  c.save();
+  c.translate(screenshake.x, screenshake.y);
+
+  // Background
+  drawBackground(c, canvas);
 
   // Always draw characters (even in menu)
   if (gamePaused) {
     player.draw(c);
     enemy.draw(c);
+    c.restore();
     return;
   }
 
@@ -185,6 +193,9 @@ function animate() {
         particle.update(c);
     }
   }
+
+  // End of drawing relative to screenshake
+  c.restore();
 
   if (gameMode === 'MENU') {
       if (player.position.y + player.height < canvas.height - 96) player.velocity.y += GRAVITY;
@@ -308,9 +319,11 @@ function animate() {
                 y: (Math.random() - 0.5) * 6
             },
             radius: Math.random() * 3,
-            color: enemy.color
+            color: enemy.color,
+            type: 'spark'
         }));
     }
+    screenshake.intensity = 15;
 
     if (enemy.health < 0) enemy.health = 0;
     document.querySelector('#enemy-health').style.width = enemy.health + '%';
@@ -346,9 +359,11 @@ function animate() {
                 y: (Math.random() - 0.5) * 6
             },
             radius: Math.random() * 3,
-            color: player.color
+            color: player.color,
+            type: 'crumb'
         }));
     }
+    screenshake.intensity = 15;
 
     if (player.health < 0) player.health = 0;
     document.querySelector('#player-health').style.width = player.health + '%';
