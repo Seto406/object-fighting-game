@@ -1,5 +1,31 @@
 import { GRAVITY } from './constants.js';
 
+export class Projectile {
+  constructor({ position, velocity, color = 'red', width = 20, height = 10 }) {
+    this.position = position;
+    this.velocity = velocity;
+    this.color = color;
+    this.width = width;
+    this.height = height;
+    this.attackBox = {
+        position: this.position,
+        width: this.width,
+        height: this.height
+    };
+  }
+
+  draw(c) {
+    c.fillStyle = this.color;
+    c.fillRect(this.position.x, this.position.y, this.width, this.height);
+  }
+
+  update(c) {
+    this.draw(c);
+    this.position.x += this.velocity.x;
+    this.position.y += this.velocity.y;
+  }
+}
+
 export class Sprite {
   constructor({ position, imageSrc, scale = 1, framesMax = 1, offset = { x: 0, y: 0 } }) {
     this.position = position;
@@ -91,6 +117,9 @@ export class Fighter extends Sprite {
     this.framesHold = 5;
     this.sprites = sprites;
     this.dead = false;
+    this.projectiles = [];
+    this.isBlocking = false;
+    this.isShooting = false;
 
     if (this.sprites) {
       for (const sprite in this.sprites) {
@@ -117,6 +146,19 @@ export class Fighter extends Sprite {
       this.position.y = c.canvas.height - 96 - this.height;
     } else {
       this.velocity.y += GRAVITY;
+    }
+
+    // Update Projectiles
+    for (let i = this.projectiles.length - 1; i >= 0; i--) {
+      const projectile = this.projectiles[i];
+      projectile.update(c);
+      // Remove if off screen
+      if (
+        projectile.position.x + projectile.width < 0 ||
+        projectile.position.x > c.canvas.width
+      ) {
+        this.projectiles.splice(i, 1);
+      }
     }
   }
 
@@ -151,9 +193,55 @@ export class Fighter extends Sprite {
           this.attackBox.height
         );
       }
+
+      // Visual for Blocking
+      if (this.isBlocking) {
+          c.strokeStyle = 'blue';
+          c.lineWidth = 5;
+          c.strokeRect(this.position.x - 5, this.position.y - 5, this.width + 10, this.height + 10);
+      }
+
     } else {
       super.draw(c);
+       // Visual for Blocking (even with sprites)
+       if (this.isBlocking) {
+        c.strokeStyle = 'blue';
+        c.lineWidth = 5;
+        c.strokeRect(this.position.x - 5, this.position.y - 5, this.width + 10, this.height + 10);
+      }
     }
+  }
+
+  shoot() {
+     if (this.isShooting) return;
+
+    let velocityX = 10;
+    // P1 defaults to facing right, P2 defaults to facing left if no key pressed?
+    // We can check if lastKey is 'a' or 'ArrowLeft' -> Left
+    if (this.lastKey === 'a' || this.lastKey === 'ArrowLeft') {
+        velocityX = -10;
+    }
+    // If no lastKey is set yet (start of game), we might need a default.
+    // P1 (Toaster) usually starts on left side (x=200), P2 (Microwave) on right (x=800).
+    // So if lastKey is undefined:
+    if (!this.lastKey) {
+        if (this.position.x > 512) velocityX = -10; // Assume right side player faces left
+    }
+
+    const projectile = new Projectile({
+        position: {
+            x: this.position.x + (velocityX > 0 ? this.width : -40),
+            y: this.position.y + this.height / 2 - 10
+        },
+        velocity: { x: velocityX, y: 0 },
+        color: this.projectileColor || 'black',
+        width: 40,
+        height: 10
+    });
+    this.projectiles.push(projectile);
+
+    this.isShooting = true;
+    setTimeout(() => this.isShooting = false, 500); // 0.5s Cooldown
   }
 }
 
@@ -163,6 +251,7 @@ export class Toaster extends Fighter {
     this.color = '#C0C0C0'; // Silver
     this.width = 60; // Slightly wider
     this.height = 100; // Shorter
+    this.projectileColor = '#DAA520'; // Golden toast
   }
 
   draw(c) {
@@ -189,6 +278,19 @@ export class Toaster extends Fighter {
         this.attackBox.height
       );
     }
+
+    // Blocking
+    if (this.isBlocking) {
+      c.strokeStyle = '#DAA520'; // Gold shield
+      c.lineWidth = 5;
+      c.strokeRect(this.position.x - 5, this.position.y - 5, this.width + 10, this.height + 10);
+    }
+  }
+
+  shoot() {
+      // Custom shoot if needed, or use Fighter's with configured color
+      super.shoot();
+      // We could change shape here if we wanted Projectile to support shapes or custom draw
   }
 }
 
@@ -198,6 +300,7 @@ export class Microwave extends Fighter {
     this.color = '#EEE'; // White
     this.width = 80; // Wider
     this.height = 100; // Shorter
+    this.projectileColor = '#00FFFF'; // Cyan wave
   }
 
   draw(c) {
@@ -230,5 +333,12 @@ export class Microwave extends Fighter {
         this.attackBox.height
       );
     }
+
+    // Blocking
+    if (this.isBlocking) {
+        c.strokeStyle = '#00FFFF'; // Cyan shield
+        c.lineWidth = 5;
+        c.strokeRect(this.position.x - 5, this.position.y - 5, this.width + 10, this.height + 10);
+      }
   }
 }

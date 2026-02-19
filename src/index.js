@@ -36,8 +36,10 @@ const enemy = new Microwave({
 const keys = {
   a: { pressed: false },
   d: { pressed: false },
+  s: { pressed: false },
   ArrowRight: { pressed: false },
-  ArrowLeft: { pressed: false }
+  ArrowLeft: { pressed: false },
+  ArrowDown: { pressed: false }
 };
 
 function decreaseTimer() {
@@ -96,11 +98,23 @@ function initGame(mode) {
     player.health = 100;
     player.dead = false;
     player.velocity = { x: 0, y: 0 };
+    player.projectiles = [];
+    player.isBlocking = false;
 
     enemy.position = { x: 800, y: 100 };
     enemy.health = 100;
     enemy.dead = false;
     enemy.velocity = { x: 0, y: 0 };
+    enemy.projectiles = [];
+    enemy.isBlocking = false;
+
+    // Reset keys
+    keys.a.pressed = false;
+    keys.d.pressed = false;
+    keys.s.pressed = false;
+    keys.ArrowRight.pressed = false;
+    keys.ArrowLeft.pressed = false;
+    keys.ArrowDown.pressed = false;
 
     clearTimeout(timerId);
     decreaseTimer();
@@ -149,9 +163,6 @@ function animate() {
   enemy.update(c);
 
   if (gameMode === 'MENU') {
-      // Maybe slow rotation or idle animation?
-      // Reset positions to keep them on screen if they drift?
-      // For now, just let gravity work.
       if (player.position.y + player.height < canvas.height - 96) player.velocity.y += GRAVITY;
       else player.velocity.y = 0;
 
@@ -166,47 +177,127 @@ function animate() {
   player.velocity.x = 0;
   enemy.velocity.x = 0;
 
+  // Player 1 Block
+  player.isBlocking = keys.s.pressed;
+
   // Player 1 Movement
-  if (keys.a.pressed && player.lastKey === 'a') player.velocity.x = -5;
-  else if (keys.d.pressed && player.lastKey === 'd') player.velocity.x = 5;
-  if (keys.a.pressed && !keys.d.pressed) player.velocity.x = -5;
-  if (keys.d.pressed && !keys.a.pressed) player.velocity.x = 5;
+  if (!player.isBlocking) {
+      if (keys.a.pressed && player.lastKey === 'a') player.velocity.x = -5;
+      else if (keys.d.pressed && player.lastKey === 'd') player.velocity.x = 5;
+      if (keys.a.pressed && !keys.d.pressed) player.velocity.x = -5;
+      if (keys.d.pressed && !keys.a.pressed) player.velocity.x = 5;
+  }
 
   // Player 2 Movement / AI
   if (gameMode === 'pvp') {
-    if (keys.ArrowLeft.pressed && enemy.lastKey === 'ArrowLeft') enemy.velocity.x = -5;
-    else if (keys.ArrowRight.pressed && enemy.lastKey === 'ArrowRight') enemy.velocity.x = 5;
-    if (keys.ArrowLeft.pressed && !keys.ArrowRight.pressed) enemy.velocity.x = -5;
-    if (keys.ArrowRight.pressed && !keys.ArrowLeft.pressed) enemy.velocity.x = 5;
+    enemy.isBlocking = keys.ArrowDown.pressed;
+
+    if (!enemy.isBlocking) {
+        if (keys.ArrowLeft.pressed && enemy.lastKey === 'ArrowLeft') enemy.velocity.x = -5;
+        else if (keys.ArrowRight.pressed && enemy.lastKey === 'ArrowRight') enemy.velocity.x = 5;
+        if (keys.ArrowLeft.pressed && !keys.ArrowRight.pressed) enemy.velocity.x = -5;
+        if (keys.ArrowRight.pressed && !keys.ArrowLeft.pressed) enemy.velocity.x = 5;
+    }
   } else if (gameMode === 'pvcpu') {
+    // AI Logic
     const dx = player.position.x - enemy.position.x;
     const distance = Math.abs(dx);
     const attackRange = enemy.attackBox.width;
 
-    if (distance > attackRange - 20) {
-        if (player.position.x < enemy.position.x) enemy.velocity.x = -3;
-        else enemy.velocity.x = 3;
+    enemy.isBlocking = false;
+
+    // Determine Facing
+    if (player.position.x < enemy.position.x) {
+        if (enemy.velocity.x < 0) enemy.lastKey = 'ArrowLeft';
     } else {
-        if (Math.random() < 0.05) enemy.attack();
-        if (Math.random() < 0.02) {
-             if (player.position.x < enemy.position.x) enemy.velocity.x = 3;
-             else enemy.velocity.x = -3;
-        }
+        if (enemy.velocity.x > 0) enemy.lastKey = 'ArrowRight';
     }
-    if (Math.random() < 0.005 && enemy.velocity.y === 0) enemy.velocity.y = -20;
+
+    // Defensive Block
+    if (player.isAttacking && distance < attackRange + 50) {
+        if (Math.random() < 0.1) enemy.isBlocking = true;
+    }
+    // Block Projectiles
+    let projectileIncoming = false;
+    player.projectiles.forEach(proj => {
+        const dist = Math.abs(proj.position.x - enemy.position.x);
+        if (dist < 250 && dist > 0) {
+             // Check if projectile is moving towards enemy
+             if ((proj.velocity.x > 0 && proj.position.x < enemy.position.x) ||
+                 (proj.velocity.x < 0 && proj.position.x > enemy.position.x)) {
+                 projectileIncoming = true;
+             }
+        }
+    });
+
+    if (projectileIncoming && Math.random() < 0.1) {
+        enemy.isBlocking = true;
+    }
+
+    if (!enemy.isBlocking) {
+         // Movement and Attack
+        if (distance > attackRange - 20) {
+             if (distance > 300 && Math.random() < 0.01) {
+                 enemy.shoot();
+             } else {
+                if (player.position.x < enemy.position.x) enemy.velocity.x = -3;
+                else enemy.velocity.x = 3;
+             }
+        } else {
+            if (Math.random() < 0.05) enemy.attack();
+            if (Math.random() < 0.02) {
+                 if (player.position.x < enemy.position.x) enemy.velocity.x = 3;
+                 else enemy.velocity.x = -3;
+            }
+        }
+        if (Math.random() < 0.005 && enemy.velocity.y === 0) enemy.velocity.y = -20;
+    }
   }
 
-  // Detect Collisions
+  // Detect Collisions - Player 1 Melee
   if (rectangularCollision({ rectangle1: player, rectangle2: enemy }) && player.isAttacking) {
     player.isAttacking = false;
-    enemy.health -= 20;
+    let damage = 20;
+    if (enemy.isBlocking) damage = 2; // Chip damage
+    enemy.health -= damage;
+    if (enemy.health < 0) enemy.health = 0;
     document.querySelector('#enemy-health').style.width = enemy.health + '%';
   }
 
+  // Detect Collisions - Player 2 Melee
   if (rectangularCollision({ rectangle1: enemy, rectangle2: player }) && enemy.isAttacking) {
     enemy.isAttacking = false;
-    player.health -= 20;
+    let damage = 20;
+    if (player.isBlocking) damage = 2;
+    player.health -= damage;
+    if (player.health < 0) player.health = 0;
     document.querySelector('#player-health').style.width = player.health + '%';
+  }
+
+  // Projectile Collisions - Player 1 vs Enemy
+  for (let i = player.projectiles.length - 1; i >= 0; i--) {
+    const projectile = player.projectiles[i];
+    if (rectangularCollision({ rectangle1: projectile, rectangle2: enemy })) {
+      player.projectiles.splice(i, 1);
+      let damage = 10;
+      if (enemy.isBlocking) damage = 1;
+      enemy.health -= damage;
+      if (enemy.health < 0) enemy.health = 0;
+      document.querySelector('#enemy-health').style.width = enemy.health + '%';
+    }
+  }
+
+  // Projectile Collisions - Enemy vs Player
+  for (let i = enemy.projectiles.length - 1; i >= 0; i--) {
+    const projectile = enemy.projectiles[i];
+    if (rectangularCollision({ rectangle1: projectile, rectangle2: player })) {
+      enemy.projectiles.splice(i, 1);
+      let damage = 10;
+      if (player.isBlocking) damage = 1;
+      player.health -= damage;
+      if (player.health < 0) player.health = 0;
+      document.querySelector('#player-health').style.width = player.health + '%';
+    }
   }
 
   if (enemy.health <= 0 || player.health <= 0) {
@@ -228,12 +319,13 @@ window.addEventListener('keydown', (event) => {
 
   if (gameOver) {
       if (event.key === ' ') {
-          initGame(gameMode); // Restart same mode
+          initGame(gameMode);
       }
       return;
   }
 
   switch (event.key) {
+    // Player 1
     case 'd':
       keys.d.pressed = true;
       player.lastKey = 'd';
@@ -243,12 +335,19 @@ window.addEventListener('keydown', (event) => {
       player.lastKey = 'a';
       break;
     case 'w':
-      if (player.velocity.y === 0) player.velocity.y = -20;
+      if (player.velocity.y === 0 && !player.isBlocking) player.velocity.y = -20;
+      break;
+    case 's':
+      keys.s.pressed = true;
       break;
     case ' ':
-      player.attack();
+      if (!player.isBlocking) player.attack();
+      break;
+    case 'f':
+      if (!player.isBlocking) player.shoot();
       break;
 
+    // Player 2
     case 'ArrowRight':
       keys.ArrowRight.pressed = true;
       enemy.lastKey = 'ArrowRight';
@@ -258,10 +357,17 @@ window.addEventListener('keydown', (event) => {
       enemy.lastKey = 'ArrowLeft';
       break;
     case 'ArrowUp':
-      if (gameMode === 'pvp' && enemy.velocity.y === 0) enemy.velocity.y = -20;
+      if (gameMode === 'pvp' && enemy.velocity.y === 0 && !enemy.isBlocking) enemy.velocity.y = -20;
       break;
     case 'ArrowDown':
-      if (gameMode === 'pvp') enemy.attack();
+       // Used for blocking now
+       keys.ArrowDown.pressed = true;
+       break;
+    case 'Enter':
+      if (gameMode === 'pvp' && !enemy.isBlocking) enemy.attack();
+      break;
+    case 'Shift':
+      if (gameMode === 'pvp' && !enemy.isBlocking) enemy.shoot();
       break;
   }
 });
@@ -270,7 +376,10 @@ window.addEventListener('keyup', (event) => {
   switch (event.key) {
     case 'd': keys.d.pressed = false; break;
     case 'a': keys.a.pressed = false; break;
+    case 's': keys.s.pressed = false; break;
+
     case 'ArrowRight': keys.ArrowRight.pressed = false; break;
     case 'ArrowLeft': keys.ArrowLeft.pressed = false; break;
+    case 'ArrowDown': keys.ArrowDown.pressed = false; break;
   }
 });
