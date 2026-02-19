@@ -1,5 +1,6 @@
 import { Toaster, Microwave } from './classes.js';
 import { rectangularCollision, determineWinner } from './utils.js';
+import { GRAVITY } from './constants.js';
 
 const canvas = document.querySelector('canvas');
 const c = canvas.getContext('2d');
@@ -8,8 +9,6 @@ canvas.width = 1024;
 canvas.height = 576;
 
 c.fillRect(0, 0, canvas.width, canvas.height);
-
-const gravity = 0.7;
 
 // Game State
 let gameMode = 'MENU'; // 'MENU', 'pvp', 'pvcpu'
@@ -113,10 +112,10 @@ function animate() {
       // Maybe slow rotation or idle animation?
       // Reset positions to keep them on screen if they drift?
       // For now, just let gravity work.
-      if (player.position.y + player.height < canvas.height - 96) player.velocity.y += gravity;
+      if (player.position.y + player.height < canvas.height - 96) player.velocity.y += GRAVITY;
       else player.velocity.y = 0;
 
-      if (enemy.position.y + enemy.height < canvas.height - 96) enemy.velocity.y += gravity;
+      if (enemy.position.y + enemy.height < canvas.height - 96) enemy.velocity.y += GRAVITY;
       else enemy.velocity.y = 0;
 
       return;
