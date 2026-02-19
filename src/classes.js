@@ -26,6 +26,40 @@ export class Projectile {
   }
 }
 
+export class Particle {
+  constructor({ position, velocity, radius, color = 'red', fades = true }) {
+    this.position = position;
+    this.velocity = velocity;
+    this.radius = radius;
+    this.color = color;
+    this.opacity = 1;
+    this.fades = fades;
+    this.ttl = 0;
+  }
+
+  draw(c) {
+    c.save();
+    c.globalAlpha = this.opacity;
+    c.beginPath();
+    c.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2, false);
+    c.fillStyle = this.color;
+    c.fill();
+    c.closePath();
+    c.restore();
+  }
+
+  update(c) {
+    this.draw(c);
+    this.position.x += this.velocity.x;
+    this.position.y += this.velocity.y;
+    this.velocity.y += GRAVITY * 0.5;
+
+    if (this.fades) {
+        this.opacity -= 0.03;
+    }
+  }
+}
+
 export class Sprite {
   constructor({ position, imageSrc, scale = 1, framesMax = 1, offset = { x: 0, y: 0 } }) {
     this.position = position;
@@ -123,6 +157,13 @@ export class Fighter extends Sprite {
     this.projectiles = [];
     this.isBlocking = false;
     this.isShooting = false;
+    this.jumps = 0;
+    this.MAX_JUMPS = 2;
+    this.isDashing = false;
+    this.dashCooldown = 0;
+    this.dashTimer = 0;
+    this.isStunned = false;
+    this.stunTimer = 0;
 
     if (this.sprites) {
       for (const sprite in this.sprites) {
@@ -135,6 +176,20 @@ export class Fighter extends Sprite {
   update(c) {
     this.draw(c);
     if (!this.dead) this.animateFrames();
+
+    if (this.isStunned) {
+        this.stunTimer--;
+        if (this.stunTimer <= 0) this.isStunned = false;
+    }
+
+    if (this.dashCooldown > 0) this.dashCooldown--;
+    if (this.isDashing) {
+        this.dashTimer--;
+        if (this.dashTimer <= 0) {
+            this.isDashing = false;
+            this.velocity.x = 0;
+        }
+    }
 
     // Determine direction
     let currentDir = this.facing;
@@ -166,6 +221,7 @@ export class Fighter extends Sprite {
     if (this.position.y + this.height + this.velocity.y >= c.canvas.height - 96) {
       this.velocity.y = 0;
       this.position.y = c.canvas.height - 96 - this.height;
+      this.jumps = 0;
     } else {
       this.velocity.y += GRAVITY;
     }
@@ -182,6 +238,30 @@ export class Fighter extends Sprite {
         this.projectiles.splice(i, 1);
       }
     }
+  }
+
+  jump() {
+    if (this.isStunned) return;
+    if (this.jumps < this.MAX_JUMPS) {
+      this.velocity.y = -20;
+      this.jumps++;
+    }
+  }
+
+  dash() {
+    if (this.isStunned || this.isDashing || this.dashCooldown > 0) return;
+    this.isDashing = true;
+    this.dashTimer = 10;
+    this.dashCooldown = 100;
+
+    let dir = 1;
+    if (this.lastKey === 'a' || this.lastKey === 'ArrowLeft') dir = -1;
+    else if (this.lastKey === 'd' || this.lastKey === 'ArrowRight') dir = 1;
+    else {
+        if (this.facing === 'left') dir = -1;
+    }
+
+    this.velocity.x = dir * 20;
   }
 
   attack() {
@@ -277,18 +357,34 @@ export class Toaster extends Fighter {
   }
 
   draw(c) {
+    c.save();
+    c.translate(this.position.x + this.width / 2, this.position.y + this.height / 2);
+
+    let stretch = 0;
+    if (this.velocity.y !== 0) {
+        stretch = Math.min(Math.abs(this.velocity.y) * 0.02, 0.3);
+    }
+    if (this.velocity.y === 0 && this.velocity.x === 0) {
+        c.translate(0, Math.sin(Date.now() / 200) * 2);
+    }
+
+    c.scale(1 - stretch, 1 + stretch);
+    c.translate(-this.width / 2, -this.height / 2);
+
     // Draw Body
     c.fillStyle = this.color;
-    c.fillRect(this.position.x, this.position.y, this.width, this.height);
+    c.fillRect(0, 0, this.width, this.height);
 
     // Draw Slots
     c.fillStyle = '#333';
-    c.fillRect(this.position.x + 15, this.position.y, 10, 20);
-    c.fillRect(this.position.x + 35, this.position.y, 10, 20);
+    c.fillRect(15, 0, 10, 20);
+    c.fillRect(35, 0, 10, 20);
 
     // Draw Lever
     c.fillStyle = '#000';
-    c.fillRect(this.position.x + this.width, this.position.y + 30, 10, 10);
+    c.fillRect(this.width, 30, 10, 10);
+
+    c.restore();
 
     // Attack Box
     if (this.isAttacking) {
@@ -326,24 +422,39 @@ export class Microwave extends Fighter {
   }
 
   draw(c) {
+    c.save();
+    c.translate(this.position.x + this.width / 2, this.position.y + this.height / 2);
+
+    let stretch = 0;
+    if (this.velocity.y !== 0) {
+        stretch = Math.min(Math.abs(this.velocity.y) * 0.02, 0.3);
+    }
+    if (this.velocity.y === 0 && this.velocity.x === 0) {
+        c.translate(0, Math.sin(Date.now() / 200) * 2);
+    }
+
+    c.scale(1 - stretch, 1 + stretch);
+    c.translate(-this.width / 2, -this.height / 2);
+
     // Draw Body
     c.fillStyle = this.color;
-    c.fillRect(this.position.x, this.position.y, this.width, this.height);
+    c.fillRect(0, 0, this.width, this.height);
 
     // Draw Window
-    c.fillStyle = '#222'; // Dark glass
-    c.fillRect(this.position.x + 5, this.position.y + 15, this.width - 25, this.height - 30);
+    c.fillStyle = '#222';
+    c.fillRect(5, 15, this.width - 25, this.height - 30);
 
     // Draw Control Panel
     c.fillStyle = '#CCC';
-    c.fillRect(this.position.x + this.width - 20, this.position.y + 10, 15, this.height - 20);
+    c.fillRect(this.width - 20, 10, 15, this.height - 20);
 
     // Draw Buttons
     c.fillStyle = '#000';
-    c.fillRect(this.position.x + this.width - 15, this.position.y + 25, 5, 5);
-    c.fillRect(this.position.x + this.width - 15, this.position.y + 40, 5, 5);
-    c.fillRect(this.position.x + this.width - 15, this.position.y + 55, 5, 5);
+    c.fillRect(this.width - 15, 25, 5, 5);
+    c.fillRect(this.width - 15, 40, 5, 5);
+    c.fillRect(this.width - 15, 55, 5, 5);
 
+    c.restore();
 
     // Attack Box
     if (this.isAttacking) {
