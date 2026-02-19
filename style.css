@@ -146,3 +146,47 @@ canvas {
     text-align: center;
     line-height: 1.5;
 }
+
+#pause-btn {
+    position: absolute;
+    top: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    background-color: transparent;
+    border: 2px solid white;
+    color: white;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 10px;
+    padding: 5px 10px;
+    cursor: pointer;
+    text-transform: uppercase;
+    /* Initially hidden via inline style, managed by JS */
+}
+
+#pause-btn:hover {
+    background-color: white;
+    color: black;
+}
+
+#pause-menu {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    z-index: 200;
+}
+
+#pause-menu h1 {
+    font-size: 48px;
+    margin-bottom: 40px;
+    text-shadow: 4px 4px 0 #881111;
+    text-align: center;
+}

@@ -12,6 +12,7 @@ c.fillRect(0, 0, canvas.width, canvas.height);
 
 // Game State
 let gameMode = 'MENU'; // 'MENU', 'pvp', 'pvcpu'
+let gamePaused = false;
 let gameOver = false;
 let timer = 60;
 let timerId;
@@ -40,20 +41,47 @@ const keys = {
 };
 
 function decreaseTimer() {
-  if (timer > 0) {
-    timerId = setTimeout(decreaseTimer, 1000);
-    timer--;
-    document.querySelector('#timer').innerHTML = timer;
-  }
+  timerId = setTimeout(() => {
+    if (timer > 0) {
+      timer--;
+      document.querySelector('#timer').innerHTML = timer;
+      decreaseTimer();
+    }
 
-  if (timer === 0) {
-    determineWinner({ player, enemy, timerId });
-    gameOver = true;
+    if (timer === 0) {
+      determineWinner({ player, enemy, timerId });
+      gameOver = true;
+    }
+  }, 1000);
+}
+
+function togglePause() {
+  if (gameMode === 'MENU' || gameOver) return;
+  gamePaused = !gamePaused;
+  if (gamePaused) {
+    clearTimeout(timerId);
+    document.querySelector('#pause-menu').style.display = 'flex';
+    document.querySelector('#pause-btn').style.display = 'none';
+  } else {
+    decreaseTimer();
+    document.querySelector('#pause-menu').style.display = 'none';
+    document.querySelector('#pause-btn').style.display = 'block';
   }
+}
+
+function backToMenu() {
+  gamePaused = false;
+  gameMode = 'MENU';
+  clearTimeout(timerId);
+  document.querySelector('#pause-menu').style.display = 'none';
+  document.querySelector('#main-menu').style.display = 'flex';
+  document.querySelector('#display-text').style.display = 'none';
+  document.querySelector('#pause-btn').style.display = 'none';
 }
 
 function initGame(mode) {
     gameMode = mode;
+    gamePaused = false;
     gameOver = false;
     timer = 60;
     document.querySelector('#timer').innerHTML = timer;
@@ -61,6 +89,8 @@ function initGame(mode) {
     document.querySelector('#enemy-health').style.width = '100%';
     document.querySelector('#display-text').style.display = 'none';
     document.querySelector('#main-menu').style.display = 'none';
+    document.querySelector('#pause-menu').style.display = 'none';
+    document.querySelector('#pause-btn').style.display = 'block';
 
     player.position = { x: 200, y: 0 };
     player.health = 100;
@@ -85,6 +115,10 @@ document.querySelector('#btn-cpu').addEventListener('click', () => {
     initGame('pvcpu');
 });
 
+document.querySelector('#pause-btn').addEventListener('click', togglePause);
+document.querySelector('#btn-resume').addEventListener('click', togglePause);
+document.querySelector('#btn-menu').addEventListener('click', backToMenu);
+
 
 function animate() {
   window.requestAnimationFrame(animate);
@@ -105,6 +139,12 @@ function animate() {
   }
 
   // Always draw characters (even in menu)
+  if (gamePaused) {
+    player.draw(c);
+    enemy.draw(c);
+    return;
+  }
+
   player.update(c);
   enemy.update(c);
 
@@ -179,6 +219,12 @@ animate();
 
 window.addEventListener('keydown', (event) => {
   if (gameMode === 'MENU') return;
+
+  if (event.key === 'Escape') {
+    togglePause();
+  }
+
+  if (gamePaused) return;
 
   if (gameOver) {
       if (event.key === ' ') {
