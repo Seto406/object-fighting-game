@@ -9,12 +9,11 @@ export function rectangularCollision({ rectangle1, rectangle2 }) {
 
 export function determineWinner({ player, enemy, timerId }) {
   clearTimeout(timerId);
-  document.querySelector('#display-text').style.display = 'flex';
   if (player.health === enemy.health) {
-    document.querySelector('#display-text').innerHTML = 'Tie';
+    return 'Tie';
   } else if (player.health > enemy.health) {
-    document.querySelector('#display-text').innerHTML = 'Player 1 Wins';
+    return 'Player 1 Wins';
   } else if (player.health < enemy.health) {
-    document.querySelector('#display-text').innerHTML = 'Player 2 Wins';
+    return 'Player 2 Wins';
   }
 }
