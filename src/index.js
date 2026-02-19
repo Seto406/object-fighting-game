@@ -51,7 +51,8 @@ function decreaseTimer() {
     }
 
     if (timer === 0) {
-      determineWinner({ player, enemy, timerId });
+      const result = determineWinner({ player, enemy, timerId });
+      handleGameOver(result);
       gameOver = true;
     }
   }, 1000);
@@ -71,11 +72,18 @@ function togglePause() {
   }
 }
 
+function handleGameOver(result) {
+    document.querySelector('#game-over-result').innerHTML = result;
+    document.querySelector('#game-over-menu').style.display = 'flex';
+    document.querySelector('#pause-btn').style.display = 'none';
+}
+
 function backToMenu() {
   gamePaused = false;
   gameMode = 'MENU';
   clearTimeout(timerId);
   document.querySelector('#pause-menu').style.display = 'none';
+  document.querySelector('#game-over-menu').style.display = 'none';
   document.querySelector('#main-menu').style.display = 'flex';
   document.querySelector('#display-text').style.display = 'none';
   document.querySelector('#pause-btn').style.display = 'none';
@@ -92,6 +100,7 @@ function initGame(mode) {
     document.querySelector('#display-text').style.display = 'none';
     document.querySelector('#main-menu').style.display = 'none';
     document.querySelector('#pause-menu').style.display = 'none';
+    document.querySelector('#game-over-menu').style.display = 'none';
     document.querySelector('#pause-btn').style.display = 'block';
 
     player.position = { x: 200, y: 0 };
@@ -132,6 +141,10 @@ document.querySelector('#btn-cpu').addEventListener('click', () => {
 document.querySelector('#pause-btn').addEventListener('click', togglePause);
 document.querySelector('#btn-resume').addEventListener('click', togglePause);
 document.querySelector('#btn-menu').addEventListener('click', backToMenu);
+document.querySelector('#btn-rematch').addEventListener('click', () => {
+    initGame(gameMode);
+});
+document.querySelector('#btn-home').addEventListener('click', backToMenu);
 
 
 function animate() {
@@ -260,6 +273,14 @@ function animate() {
     let damage = 20;
     if (enemy.isBlocking) damage = 2; // Chip damage
     enemy.health -= damage;
+
+    // Pushback
+    if (player.position.x < enemy.position.x) {
+        enemy.position.x += 60;
+    } else {
+        enemy.position.x -= 60;
+    }
+
     if (enemy.health < 0) enemy.health = 0;
     document.querySelector('#enemy-health').style.width = enemy.health + '%';
   }
@@ -270,6 +291,14 @@ function animate() {
     let damage = 20;
     if (player.isBlocking) damage = 2;
     player.health -= damage;
+
+    // Pushback
+    if (enemy.position.x < player.position.x) {
+        player.position.x += 60;
+    } else {
+        player.position.x -= 60;
+    }
+
     if (player.health < 0) player.health = 0;
     document.querySelector('#player-health').style.width = player.health + '%';
   }
@@ -301,7 +330,8 @@ function animate() {
   }
 
   if (enemy.health <= 0 || player.health <= 0) {
-    determineWinner({ player, enemy, timerId });
+    const result = determineWinner({ player, enemy, timerId });
+    handleGameOver(result);
     gameOver = true;
   }
 }

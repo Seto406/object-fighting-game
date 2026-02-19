@@ -86,7 +86,8 @@ export class Fighter extends Sprite {
     framesMax = 1,
     offset = { x: 0, y: 0 },
     sprites,
-    attackBox = { offset: {}, width: undefined, height: undefined }
+    attackBox = { offset: {}, width: undefined, height: undefined },
+    facing = 'right'
   }) {
     super({
       position,
@@ -100,15 +101,17 @@ export class Fighter extends Sprite {
     this.width = 50;
     this.height = 150;
     this.lastKey;
+    this.initialAttackBoxOffset = attackBox.offset || { x: 0, y: 0 };
     this.attackBox = {
       position: {
         x: this.position.x,
         y: this.position.y
       },
-      offset: attackBox.offset || { x: 0, y: 0 },
+      offset: this.initialAttackBoxOffset,
       width: attackBox.width || 100,
       height: attackBox.height || 50
     };
+    this.facing = facing; // 'right' or 'left'
     this.color = color;
     this.isAttacking;
     this.health = 100;
@@ -133,11 +136,30 @@ export class Fighter extends Sprite {
     this.draw(c);
     if (!this.dead) this.animateFrames();
 
+    // Determine direction
+    let currentDir = this.facing;
+    if (this.lastKey === 'd' || this.lastKey === 'ArrowRight') currentDir = 'right';
+    else if (this.lastKey === 'a' || this.lastKey === 'ArrowLeft') currentDir = 'left';
+
+    // Update Attack Box Offset based on direction
+    if (currentDir === this.facing) {
+        this.attackBox.offset.x = this.initialAttackBoxOffset.x;
+    } else {
+        // Mirror the offset
+        // x = width - initialOffset - attackWidth
+        this.attackBox.offset.x = this.width - this.initialAttackBoxOffset.x - this.attackBox.width;
+    }
+
     // Attack boxes
     this.attackBox.position.x = this.position.x + this.attackBox.offset.x;
     this.attackBox.position.y = this.position.y + this.attackBox.offset.y;
 
     this.position.x += this.velocity.x;
+
+    // Boundary Check
+    if (this.position.x < 0) this.position.x = 0;
+    if (this.position.x + this.width > c.canvas.width) this.position.x = c.canvas.width - this.width;
+
     this.position.y += this.velocity.y;
 
     // Gravity function
@@ -247,7 +269,7 @@ export class Fighter extends Sprite {
 
 export class Toaster extends Fighter {
   constructor(props) {
-    super(props);
+    super({ ...props, facing: 'right' });
     this.color = '#C0C0C0'; // Silver
     this.width = 60; // Slightly wider
     this.height = 100; // Shorter
@@ -296,7 +318,7 @@ export class Toaster extends Fighter {
 
 export class Microwave extends Fighter {
   constructor(props) {
-    super(props);
+    super({ ...props, facing: 'left' });
     this.color = '#EEE'; // White
     this.width = 80; // Wider
     this.height = 100; // Shorter
