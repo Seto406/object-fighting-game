@@ -99,7 +99,9 @@ function initGame(mode) {
     timer = 60;
     document.querySelector('#timer').innerHTML = timer;
     document.querySelector('#player-health').style.width = '100%';
+    document.querySelector('#player-health-damage').style.width = '100%';
     document.querySelector('#enemy-health').style.width = '100%';
+    document.querySelector('#enemy-health-damage').style.width = '100%';
     document.querySelector('#display-text').style.display = 'none';
     document.querySelector('#main-menu').style.display = 'none';
     document.querySelector('#pause-menu').style.display = 'none';
@@ -327,6 +329,7 @@ function animate() {
 
     if (enemy.health < 0) enemy.health = 0;
     document.querySelector('#enemy-health').style.width = enemy.health + '%';
+    document.querySelector('#enemy-health-damage').style.width = enemy.health + '%';
   }
 
   // Detect Collisions - Player 2 Melee
@@ -367,6 +370,7 @@ function animate() {
 
     if (player.health < 0) player.health = 0;
     document.querySelector('#player-health').style.width = player.health + '%';
+    document.querySelector('#player-health-damage').style.width = player.health + '%';
   }
 
   // Projectile Collisions - Player 1 vs Enemy
@@ -379,6 +383,7 @@ function animate() {
       enemy.health -= damage;
       if (enemy.health < 0) enemy.health = 0;
       document.querySelector('#enemy-health').style.width = enemy.health + '%';
+      document.querySelector('#enemy-health-damage').style.width = enemy.health + '%';
     }
   }
 
@@ -392,6 +397,7 @@ function animate() {
       player.health -= damage;
       if (player.health < 0) player.health = 0;
       document.querySelector('#player-health').style.width = player.health + '%';
+      document.querySelector('#player-health-damage').style.width = player.health + '%';
     }
   }
 
