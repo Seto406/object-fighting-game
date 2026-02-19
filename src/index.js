@@ -16,6 +16,11 @@ let gamePaused = false;
 let gameOver = false;
 let timer = 60;
 let timerId;
+let p1Wins = 0;
+let p2Wins = 0;
+let roundsToWin = 2;
+let roundDuration = 60;
+let isRoundTransition = false;
 
 const particles = [];
 let screenshake = { x: 0, y: 0, intensity: 0 };
@@ -55,8 +60,7 @@ function decreaseTimer() {
 
     if (timer === 0) {
       const result = determineWinner({ player, enemy, timerId });
-      handleGameOver(result);
-      gameOver = true;
+      handleRoundEnd(result);
     }
   }, 1000);
 }
@@ -81,6 +85,38 @@ function handleGameOver(result) {
     document.querySelector('#pause-btn').style.display = 'none';
 }
 
+function handleRoundEnd(result) {
+    if (isRoundTransition || gameOver) return;
+
+    if (result === 'Player 1 Wins') {
+        p1Wins++;
+    } else if (result === 'Player 2 Wins') {
+        p2Wins++;
+    }
+
+    document.querySelector('#p1-score').innerHTML = 'Wins: ' + p1Wins;
+    document.querySelector('#p2-score').innerHTML = 'Wins: ' + p2Wins;
+
+    if (p1Wins >= roundsToWin || p2Wins >= roundsToWin) {
+        gameOver = true;
+        let matchResult = result;
+        if (p1Wins > p2Wins) matchResult = 'Player 1 Wins Match';
+        else if (p2Wins > p1Wins) matchResult = 'Player 2 Wins Match';
+
+        handleGameOver(matchResult);
+    } else {
+        isRoundTransition = true;
+        clearTimeout(timerId);
+        document.querySelector('#display-text').style.display = 'flex';
+        document.querySelector('#display-text').innerHTML = result;
+
+        setTimeout(() => {
+            isRoundTransition = false;
+            startRound();
+        }, 2000);
+    }
+}
+
 function backToMenu() {
   gamePaused = false;
   gameMode = 'MENU';
@@ -92,20 +128,16 @@ function backToMenu() {
   document.querySelector('#pause-btn').style.display = 'none';
 }
 
-function initGame(mode) {
-    gameMode = mode;
+function startRound() {
     gamePaused = false;
     gameOver = false;
-    timer = 60;
+    timer = roundDuration;
     document.querySelector('#timer').innerHTML = timer;
     document.querySelector('#player-health').style.width = '100%';
     document.querySelector('#player-health-damage').style.width = '100%';
     document.querySelector('#enemy-health').style.width = '100%';
     document.querySelector('#enemy-health-damage').style.width = '100%';
     document.querySelector('#display-text').style.display = 'none';
-    document.querySelector('#main-menu').style.display = 'none';
-    document.querySelector('#pause-menu').style.display = 'none';
-    document.querySelector('#game-over-menu').style.display = 'none';
     document.querySelector('#pause-btn').style.display = 'block';
 
     player.position = { x: 200, y: 0 };
@@ -132,6 +164,27 @@ function initGame(mode) {
 
     clearTimeout(timerId);
     decreaseTimer();
+}
+
+function initGame(mode) {
+    gameMode = mode;
+
+    // Read settings
+    const timeSelect = document.querySelector('#round-time');
+    roundDuration = parseInt(timeSelect.value);
+    const roundSelect = document.querySelector('#rounds-to-win');
+    roundsToWin = parseInt(roundSelect.value);
+
+    p1Wins = 0;
+    p2Wins = 0;
+    document.querySelector('#p1-score').innerHTML = 'Wins: ' + p1Wins;
+    document.querySelector('#p2-score').innerHTML = 'Wins: ' + p2Wins;
+
+    document.querySelector('#main-menu').style.display = 'none';
+    document.querySelector('#pause-menu').style.display = 'none';
+    document.querySelector('#game-over-menu').style.display = 'none';
+
+    startRound();
 }
 
 // Menu Listeners
@@ -210,6 +263,7 @@ function animate() {
   }
 
   if (gameOver) return;
+  if (isRoundTransition) return;
 
   player.velocity.x = 0;
   enemy.velocity.x = 0;
@@ -403,8 +457,7 @@ function animate() {
 
   if (enemy.health <= 0 || player.health <= 0) {
     const result = determineWinner({ player, enemy, timerId });
-    handleGameOver(result);
-    gameOver = true;
+    handleRoundEnd(result);
   }
 }
 
@@ -417,7 +470,7 @@ window.addEventListener('keydown', (event) => {
     togglePause();
   }
 
-  if (gamePaused) return;
+  if (gamePaused || isRoundTransition) return;
 
   if (gameOver) {
       if (event.key === ' ') {
