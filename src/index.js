@@ -1,4 +1,4 @@
-import { Toaster, Microwave } from './classes.js';
+import { Toaster, Microwave, Particle } from './classes.js';
 import { rectangularCollision, determineWinner } from './utils.js';
 import { GRAVITY } from './constants.js';
 
@@ -16,6 +16,8 @@ let gamePaused = false;
 let gameOver = false;
 let timer = 60;
 let timerId;
+
+const particles = [];
 
 // Player 1 (Toaster)
 const player = new Toaster({
@@ -175,6 +177,15 @@ function animate() {
   player.update(c);
   enemy.update(c);
 
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const particle = particles[i];
+    if (particle.opacity <= 0) {
+        particles.splice(i, 1);
+    } else {
+        particle.update(c);
+    }
+  }
+
   if (gameMode === 'MENU') {
       if (player.position.y + player.height < canvas.height - 96) player.velocity.y += GRAVITY;
       else player.velocity.y = 0;
@@ -281,6 +292,26 @@ function animate() {
         enemy.position.x -= 60;
     }
 
+    // Stun
+    enemy.isStunned = true;
+    enemy.stunTimer = 15;
+
+    // Particles
+    for (let i = 0; i < 8; i++) {
+        particles.push(new Particle({
+            position: {
+                x: enemy.position.x + enemy.width / 2,
+                y: enemy.position.y + enemy.height / 2
+            },
+            velocity: {
+                x: (Math.random() - 0.5) * 6,
+                y: (Math.random() - 0.5) * 6
+            },
+            radius: Math.random() * 3,
+            color: enemy.color
+        }));
+    }
+
     if (enemy.health < 0) enemy.health = 0;
     document.querySelector('#enemy-health').style.width = enemy.health + '%';
   }
@@ -297,6 +328,26 @@ function animate() {
         player.position.x += 60;
     } else {
         player.position.x -= 60;
+    }
+
+    // Stun
+    player.isStunned = true;
+    player.stunTimer = 15;
+
+    // Particles
+    for (let i = 0; i < 8; i++) {
+        particles.push(new Particle({
+            position: {
+                x: player.position.x + player.width / 2,
+                y: player.position.y + player.height / 2
+            },
+            velocity: {
+                x: (Math.random() - 0.5) * 6,
+                y: (Math.random() - 0.5) * 6
+            },
+            radius: Math.random() * 3,
+            color: player.color
+        }));
     }
 
     if (player.health < 0) player.health = 0;
@@ -365,10 +416,13 @@ window.addEventListener('keydown', (event) => {
       player.lastKey = 'a';
       break;
     case 'w':
-      if (player.velocity.y === 0 && !player.isBlocking) player.velocity.y = -20;
+      if (!player.isBlocking) player.jump();
       break;
     case 's':
       keys.s.pressed = true;
+      break;
+    case 'e':
+      if (!player.isBlocking) player.dash();
       break;
     case ' ':
       if (!player.isBlocking) player.attack();
@@ -387,11 +441,14 @@ window.addEventListener('keydown', (event) => {
       enemy.lastKey = 'ArrowLeft';
       break;
     case 'ArrowUp':
-      if (gameMode === 'pvp' && enemy.velocity.y === 0 && !enemy.isBlocking) enemy.velocity.y = -20;
+      if (gameMode === 'pvp' && !enemy.isBlocking) enemy.jump();
       break;
     case 'ArrowDown':
        // Used for blocking now
        keys.ArrowDown.pressed = true;
+       break;
+    case '.':
+       if (gameMode === 'pvp' && !enemy.isBlocking) enemy.dash();
        break;
     case 'Enter':
       if (gameMode === 'pvp' && !enemy.isBlocking) enemy.attack();
