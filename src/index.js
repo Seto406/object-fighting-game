@@ -269,10 +269,10 @@ function animate() {
   enemy.velocity.x = 0;
 
   // Player 1 Block
-  player.isBlocking = keys.s.pressed;
+  player.isBlocking = keys.s.pressed && !player.isStunned;
 
   // Player 1 Movement
-  if (!player.isBlocking) {
+  if (!player.isBlocking && !player.isStunned) {
       if (keys.a.pressed && player.lastKey === 'a') player.velocity.x = -5;
       else if (keys.d.pressed && player.lastKey === 'd') player.velocity.x = 5;
       if (keys.a.pressed && !keys.d.pressed) player.velocity.x = -5;
@@ -281,9 +281,9 @@ function animate() {
 
   // Player 2 Movement / AI
   if (gameMode === 'pvp') {
-    enemy.isBlocking = keys.ArrowDown.pressed;
+    enemy.isBlocking = keys.ArrowDown.pressed && !enemy.isStunned;
 
-    if (!enemy.isBlocking) {
+    if (!enemy.isBlocking && !enemy.isStunned) {
         if (keys.ArrowLeft.pressed && enemy.lastKey === 'ArrowLeft') enemy.velocity.x = -5;
         else if (keys.ArrowRight.pressed && enemy.lastKey === 'ArrowRight') enemy.velocity.x = 5;
         if (keys.ArrowLeft.pressed && !keys.ArrowRight.pressed) enemy.velocity.x = -5;
@@ -305,7 +305,7 @@ function animate() {
     }
 
     // Defensive Block
-    if (player.isAttacking && distance < attackRange + 50) {
+    if (player.isAttacking && distance < attackRange + 50 && !enemy.isStunned) {
         if (Math.random() < 0.1) enemy.isBlocking = true;
     }
     // Block Projectiles
@@ -321,11 +321,11 @@ function animate() {
         }
     });
 
-    if (projectileIncoming && Math.random() < 0.1) {
+    if (projectileIncoming && Math.random() < 0.1 && !enemy.isStunned) {
         enemy.isBlocking = true;
     }
 
-    if (!enemy.isBlocking) {
+    if (!enemy.isBlocking && !enemy.isStunned) {
          // Movement and Attack
         if (distance > attackRange - 20) {
              if (distance > 300 && Math.random() < 0.01) {
@@ -349,7 +349,14 @@ function animate() {
   if (rectangularCollision({ rectangle1: player, rectangle2: enemy }) && player.isAttacking) {
     player.isAttacking = false;
     let damage = 20;
-    if (enemy.isBlocking) damage = 2; // Chip damage
+
+    // Directional Blocking Check
+    const isBlockingCorrectly = enemy.isBlocking && (
+        (enemy.facing === 'left' && player.position.x < enemy.position.x) ||
+        (enemy.facing === 'right' && player.position.x > enemy.position.x)
+    );
+
+    if (isBlockingCorrectly) damage = 2; // Chip damage
     enemy.health -= damage;
 
     // Pushback
@@ -390,7 +397,13 @@ function animate() {
   if (rectangularCollision({ rectangle1: enemy, rectangle2: player }) && enemy.isAttacking) {
     enemy.isAttacking = false;
     let damage = 20;
-    if (player.isBlocking) damage = 2;
+
+    const isBlockingCorrectly = player.isBlocking && (
+        (player.facing === 'left' && enemy.position.x < player.position.x) ||
+        (player.facing === 'right' && enemy.position.x > player.position.x)
+    );
+
+    if (isBlockingCorrectly) damage = 2;
     player.health -= damage;
 
     // Pushback
@@ -433,7 +446,13 @@ function animate() {
     if (rectangularCollision({ rectangle1: projectile, rectangle2: enemy })) {
       player.projectiles.splice(i, 1);
       let damage = 10;
-      if (enemy.isBlocking) damage = 1;
+
+      const isBlockingCorrectly = enemy.isBlocking && (
+          (projectile.velocity.x > 0 && enemy.facing === 'left') ||
+          (projectile.velocity.x < 0 && enemy.facing === 'right')
+      );
+
+      if (isBlockingCorrectly) damage = 1;
       enemy.health -= damage;
       if (enemy.health < 0) enemy.health = 0;
       document.querySelector('#enemy-health').style.width = enemy.health + '%';
@@ -447,7 +466,13 @@ function animate() {
     if (rectangularCollision({ rectangle1: projectile, rectangle2: player })) {
       enemy.projectiles.splice(i, 1);
       let damage = 10;
-      if (player.isBlocking) damage = 1;
+
+      const isBlockingCorrectly = player.isBlocking && (
+          (projectile.velocity.x > 0 && player.facing === 'left') ||
+          (projectile.velocity.x < 0 && player.facing === 'right')
+      );
+
+      if (isBlockingCorrectly) damage = 1;
       player.health -= damage;
       if (player.health < 0) player.health = 0;
       document.querySelector('#player-health').style.width = player.health + '%';

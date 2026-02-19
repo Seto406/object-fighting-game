@@ -187,6 +187,7 @@ export class Fighter extends Sprite {
       height: attackBox.height || 50
     };
     this.facing = facing; // 'right' or 'left'
+    this.initialFacing = facing;
     this.color = color;
     this.isAttacking;
     this.health = 100;
@@ -205,6 +206,7 @@ export class Fighter extends Sprite {
     this.dashTimer = 0;
     this.isStunned = false;
     this.stunTimer = 0;
+    this.attackCooldown = 0;
     this.projectileType = 'normal';
 
     if (this.sprites) {
@@ -224,6 +226,7 @@ export class Fighter extends Sprite {
         if (this.stunTimer <= 0) this.isStunned = false;
     }
 
+    if (this.attackCooldown > 0) this.attackCooldown--;
     if (this.dashCooldown > 0) this.dashCooldown--;
     if (this.isDashing) {
         this.dashTimer--;
@@ -238,8 +241,10 @@ export class Fighter extends Sprite {
     if (this.lastKey === 'd' || this.lastKey === 'ArrowRight') currentDir = 'right';
     else if (this.lastKey === 'a' || this.lastKey === 'ArrowLeft') currentDir = 'left';
 
+    this.facing = currentDir;
+
     // Update Attack Box Offset based on direction
-    if (currentDir === this.facing) {
+    if (this.facing === this.initialFacing) {
         this.attackBox.offset.x = this.initialAttackBoxOffset.x;
     } else {
         // Mirror the offset
@@ -307,7 +312,9 @@ export class Fighter extends Sprite {
   }
 
   attack() {
+    if (this.isStunned || this.isAttacking || this.attackCooldown > 0) return;
     this.isAttacking = true;
+    this.attackCooldown = 20;
     setTimeout(() => {
       this.isAttacking = false;
     }, 100);
@@ -357,7 +364,7 @@ export class Fighter extends Sprite {
   }
 
   shoot() {
-     if (this.isShooting) return;
+     if (this.isShooting || this.isStunned) return;
 
     let velocityX = 10;
     // P1 defaults to facing right, P2 defaults to facing left if no key pressed?
@@ -403,6 +410,11 @@ export class Toaster extends Fighter {
   draw(c) {
     c.save();
     c.translate(this.position.x + this.width / 2, this.position.y + this.height / 2);
+
+    // Visual Flipping
+    if (this.facing === 'left') {
+        c.scale(-1, 1);
+    }
 
     let stretch = 0;
     if (this.velocity.y !== 0) {
@@ -475,6 +487,11 @@ export class Microwave extends Fighter {
   draw(c) {
     c.save();
     c.translate(this.position.x + this.width / 2, this.position.y + this.height / 2);
+
+    // Visual Flipping (Microwave defaults to left)
+    if (this.facing === 'right') {
+        c.scale(-1, 1);
+    }
 
     let stretch = 0;
     if (this.velocity.y !== 0) {
