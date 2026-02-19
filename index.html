@@ -14,6 +14,7 @@
             <!-- Player 1 Health -->
             <div class="player-container" id="p1-container">
                 <div class="player-name">TOASTER</div>
+                <div class="score" id="p1-score">Wins: 0</div>
                 <div class="health-wrapper">
                     <div class="health-bar-bg"></div>
                     <div id="player-health-damage" class="health-bar-damage"></div>
@@ -27,6 +28,7 @@
             <!-- Player 2 Health -->
             <div class="player-container" id="p2-container">
                 <div class="player-name">MICROWAVE</div>
+                <div class="score" id="p2-score">Wins: 0</div>
                 <div class="health-wrapper">
                     <div class="health-bar-bg"></div>
                     <div id="enemy-health-damage" class="health-bar-damage"></div>
@@ -41,6 +43,25 @@
         <!-- Main Menu Overlay -->
         <div id="main-menu">
             <h1>Kitchen Fighter</h1>
+            <div class="menu-settings">
+                <div class="setting-group">
+                    <label for="round-time">Time</label>
+                    <select id="round-time">
+                        <option value="30">30s</option>
+                        <option value="60" selected>60s</option>
+                        <option value="99">99s</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label for="rounds-to-win">Rounds</label>
+                    <select id="rounds-to-win">
+                        <option value="1">1</option>
+                        <option value="2" selected>2</option>
+                        <option value="3">3</option>
+                        <option value="5">5</option>
+                    </select>
+                </div>
+            </div>
             <div class="menu-buttons">
                 <button id="btn-pvp">Player vs Player</button>
                 <button id="btn-cpu">Player vs CPU</button>
