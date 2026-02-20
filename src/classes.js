@@ -78,6 +78,11 @@ export class Particle {
         c.moveTo(this.position.x, this.position.y);
         c.lineTo(this.position.x + this.velocity.x * 2, this.position.y + this.velocity.y * 2);
         c.stroke();
+    } else if (this.type === 'heat') {
+        c.fillStyle = this.color;
+        c.beginPath();
+        c.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2, false);
+        c.fill();
     } else {
         c.beginPath();
         c.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2, false);
@@ -93,7 +98,10 @@ export class Particle {
     this.draw(c);
     this.position.x += this.velocity.x;
     this.position.y += this.velocity.y;
-    this.velocity.y += GRAVITY * 0.5;
+
+    if (this.type !== 'heat') {
+        this.velocity.y += GRAVITY * 0.5;
+    }
 
     if (this.fades) {
         this.opacity -= 0.03;
