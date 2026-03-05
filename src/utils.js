@@ -19,77 +19,59 @@ export function determineWinner({ player, enemy, timerId }) {
 }
 
 export function drawBackground(c, canvas) {
-    // Gradient Background (Wall)
+    const t = Date.now() * 0.001;
     const gradient = c.createLinearGradient(0, 0, 0, canvas.height);
-    gradient.addColorStop(0, '#1a1a2e');
-    gradient.addColorStop(0.7, '#16213e');
-    gradient.addColorStop(1, '#0f3460');
+    gradient.addColorStop(0, '#100b2b');
+    gradient.addColorStop(0.5, '#1c1451');
+    gradient.addColorStop(1, '#0a0720');
     c.fillStyle = gradient;
     c.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Floor
-    c.fillStyle = '#0f3460';
+    for (let i = 0; i < 40; i++) {
+        const x = (i * 137) % canvas.width;
+        const y = 40 + ((i * 83) % 200);
+        const pulse = 0.3 + Math.sin(t * 2 + i) * 0.2;
+        c.fillStyle = `rgba(255,255,255,${pulse})`;
+        c.fillRect(x, y, 2, 2);
+    }
+
+    c.fillStyle = '#191032';
+    c.fillRect(0, canvas.height - 180, canvas.width, 84);
+
+    c.fillStyle = '#0b0f2a';
     c.fillRect(0, canvas.height - 96, canvas.width, 96);
 
-    // Floor Grid (Perspective)
     c.save();
-    c.strokeStyle = '#e94560';
+    c.strokeStyle = '#00cfff';
+    c.globalAlpha = 0.22;
     c.lineWidth = 1;
-    c.globalAlpha = 0.3;
     c.beginPath();
-    // Horizontal lines
-    for (let y = canvas.height - 96; y < canvas.height; y += 20) {
+    for (let y = canvas.height - 96; y < canvas.height; y += 18) {
         c.moveTo(0, y);
         c.lineTo(canvas.width, y);
     }
-    // Vertical/Perspective lines
-    for (let x = 0; x <= canvas.width; x += 100) {
+    for (let x = 0; x <= canvas.width; x += 80) {
         c.moveTo(x, canvas.height - 96);
-        // Fake perspective: fan out from center bottom slightly?
-        // Or just angled lines. Let's do simple angled lines based on center.
-        const perspectiveOffset = (x - canvas.width / 2) * 1.5;
+        const perspectiveOffset = (x - canvas.width / 2) * 1.25;
         c.lineTo(x + perspectiveOffset, canvas.height);
     }
     c.stroke();
     c.restore();
 
-    // Background Counter top
-    c.fillStyle = '#222';
-    c.fillRect(0, canvas.height - 150, canvas.width, 20);
-    c.fillStyle = '#333'; // Shadow under counter
-    c.fillRect(0, canvas.height - 130, canvas.width, 10);
+    const crowdY = canvas.height - 190;
+    for (let i = 0; i < 24; i++) {
+        const x = i * 45;
+        const bob = Math.sin(t * 3 + i) * 2;
+        c.fillStyle = i % 2 === 0 ? '#ff4de1' : '#3df8ff';
+        c.fillRect(x, crowdY + bob, 14, 16);
+    }
 
-    // Window
-    c.fillStyle = '#050510'; // Dark outside
-    c.fillRect(canvas.width / 2 - 150, 100, 300, 200);
-    c.strokeStyle = '#333';
-    c.lineWidth = 5;
-    c.strokeRect(canvas.width / 2 - 150, 100, 300, 200); // Frame
+    c.fillStyle = '#2b1d55';
+    c.fillRect(canvas.width / 2 - 170, 76, 340, 220);
+    c.strokeStyle = '#8ffffd';
+    c.lineWidth = 4;
+    c.strokeRect(canvas.width / 2 - 170, 76, 340, 220);
 
-    // Moon
-    c.fillStyle = '#eee';
-    c.shadowBlur = 20;
-    c.shadowColor = '#fff';
-    c.beginPath();
-    c.arc(canvas.width / 2 + 80, 150, 30, 0, Math.PI * 2);
-    c.fill();
-    c.shadowBlur = 0;
-
-    // Window panes
-    c.strokeStyle = '#333';
-    c.lineWidth = 3;
-    c.beginPath();
-    c.moveTo(canvas.width / 2, 100);
-    c.lineTo(canvas.width / 2, 300);
-    c.moveTo(canvas.width / 2 - 150, 200);
-    c.lineTo(canvas.width / 2 + 150, 200);
-    c.stroke();
-
-    // Reflection on floor
-    c.save();
-    c.globalAlpha = 0.1;
-    c.fillStyle = '#e94560'; // Neon reflection
-    c.fillRect(100, canvas.height - 80, 200, 10);
-    c.fillRect(700, canvas.height - 50, 150, 5);
-    c.restore();
+    c.fillStyle = 'rgba(255, 255, 255, 0.10)';
+    c.fillRect(canvas.width / 2 - 150, 90, 300, 40);
 }

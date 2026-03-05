@@ -51,6 +51,12 @@ const keys = {
   ArrowDown: { pressed: false }
 };
 
+function updateEnergyUI() {
+  document.querySelector('#player-energy').style.width = `${player.energy}%`;
+  document.querySelector('#enemy-energy').style.width = `${enemy.energy}%`;
+}
+
+
 function decreaseTimer() {
   timerId = setTimeout(() => {
     if (timer > 0) {
@@ -149,6 +155,8 @@ function startRound() {
     player.projectiles = [];
     player.isBlocking = false;
     player.isStunned = false;
+    player.energy = 0;
+    player.isOverdrive = false;
 
     enemy.position = { x: 800, y: 100 };
     enemy.health = 100;
@@ -157,6 +165,8 @@ function startRound() {
     enemy.projectiles = [];
     enemy.isBlocking = false;
     enemy.isStunned = false;
+    enemy.energy = 0;
+    enemy.isOverdrive = false;
 
     // Reset keys
     keys.a.pressed = false;
@@ -166,6 +176,7 @@ function startRound() {
     keys.ArrowLeft.pressed = false;
     keys.ArrowDown.pressed = false;
 
+    updateEnergyUI();
     clearTimeout(timerId);
     decreaseTimer();
 }
@@ -247,7 +258,27 @@ function animate() {
       player.draw(c);
       enemy.draw(c);
 
-      for (let i = particles.length - 1; i >= 0; i--) {
+      if (player.isOverdrive && Math.random() < 0.45) {
+      particles.push(new Particle({
+          position: { x: player.position.x + Math.random() * player.width, y: player.position.y + Math.random() * player.height },
+          velocity: { x: (Math.random() - 0.5) * 1.5, y: -1.5 },
+          radius: Math.random() * 3 + 1,
+          color: 'rgba(0, 255, 234, 0.8)',
+          type: 'heat'
+      }));
+  }
+
+  if (enemy.isOverdrive && Math.random() < 0.45) {
+      particles.push(new Particle({
+          position: { x: enemy.position.x + Math.random() * enemy.width, y: enemy.position.y + Math.random() * enemy.height },
+          velocity: { x: (Math.random() - 0.5) * 1.5, y: -1.5 },
+          radius: Math.random() * 3 + 1,
+          color: 'rgba(255, 70, 230, 0.8)',
+          type: 'heat'
+      }));
+  }
+
+  for (let i = particles.length - 1; i >= 0; i--) {
           particles[i].draw(c);
       }
       c.restore();
@@ -267,6 +298,26 @@ function animate() {
           velocity: { x: 0, y: -2 },
           radius: Math.random() * 5 + 2,
           color: 'rgba(255, 69, 0, 0.5)',
+          type: 'heat'
+      }));
+  }
+
+  if (player.isOverdrive && Math.random() < 0.45) {
+      particles.push(new Particle({
+          position: { x: player.position.x + Math.random() * player.width, y: player.position.y + Math.random() * player.height },
+          velocity: { x: (Math.random() - 0.5) * 1.5, y: -1.5 },
+          radius: Math.random() * 3 + 1,
+          color: 'rgba(0, 255, 234, 0.8)',
+          type: 'heat'
+      }));
+  }
+
+  if (enemy.isOverdrive && Math.random() < 0.45) {
+      particles.push(new Particle({
+          position: { x: enemy.position.x + Math.random() * enemy.width, y: enemy.position.y + Math.random() * enemy.height },
+          velocity: { x: (Math.random() - 0.5) * 1.5, y: -1.5 },
+          radius: Math.random() * 3 + 1,
+          color: 'rgba(255, 70, 230, 0.8)',
           type: 'heat'
       }));
   }
@@ -398,7 +449,10 @@ function animate() {
     );
 
     if (isBlockingCorrectly) damage = 2; // Chip damage
+    damage = Math.round(damage * (player.isOverdrive ? 1.5 : 1));
     enemy.health -= damage;
+    player.gainEnergy(12);
+    enemy.gainEnergy(6);
 
     // Calculated Pushback
     const knockbackValue = 20 + (100 - enemy.health) * 0.5;
@@ -452,7 +506,10 @@ function animate() {
     );
 
     if (isBlockingCorrectly) damage = 2;
+    damage = Math.round(damage * (enemy.isOverdrive ? 1.5 : 1));
     player.health -= damage;
+    enemy.gainEnergy(12);
+    player.gainEnergy(6);
 
     // Calculated Pushback
     const knockbackValue = 20 + (100 - player.health) * 0.5;
@@ -508,7 +565,10 @@ function animate() {
       );
 
       if (isBlockingCorrectly) damage = 1;
+      damage = Math.round(damage * (player.isOverdrive ? 1.35 : 1));
       enemy.health -= damage;
+      player.gainEnergy(8);
+      enemy.gainEnergy(4);
 
       // Minor Hitstop for projectiles
       hitstop = 5;
@@ -532,7 +592,10 @@ function animate() {
       );
 
       if (isBlockingCorrectly) damage = 1;
+      damage = Math.round(damage * (enemy.isOverdrive ? 1.35 : 1));
       player.health -= damage;
+      enemy.gainEnergy(8);
+      player.gainEnergy(4);
 
       hitstop = 5;
 
@@ -541,6 +604,8 @@ function animate() {
       document.querySelector('#player-health-damage').style.width = player.health + '%';
     }
   }
+
+  updateEnergyUI();
 
   if (enemy.health <= 0 || player.health <= 0) {
     const result = determineWinner({ player, enemy, timerId });
@@ -591,6 +656,9 @@ window.addEventListener('keydown', (event) => {
     case 'f':
       if (!player.isBlocking) player.shoot();
       break;
+    case 'r':
+      if (player.activateOverdrive()) screenshake.intensity = 10;
+      break;
 
     // Player 2
     case 'ArrowRight':
@@ -616,6 +684,9 @@ window.addEventListener('keydown', (event) => {
       break;
     case 'Shift':
       if (gameMode === 'pvp' && !enemy.isBlocking) enemy.shoot();
+      break;
+    case '/':
+      if (gameMode === 'pvp' && enemy.activateOverdrive()) screenshake.intensity = 10;
       break;
   }
 });
