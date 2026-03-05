@@ -9,13 +9,8 @@ export function rectangularCollision({ rectangle1, rectangle2 }) {
 
 export function determineWinner({ player, enemy, timerId }) {
   clearTimeout(timerId);
-  if (player.health === enemy.health) {
-    return 'Tie';
-  } else if (player.health > enemy.health) {
-    return 'Player 1 Wins';
-  } else if (player.health < enemy.health) {
-    return 'Player 2 Wins';
-  }
+  if (player.health === enemy.health) return 'Draw';
+  return player.health > enemy.health ? 'Player 1 Wins' : 'Player 2 Wins';
 }
 
 export function drawBackground(c, canvas) {

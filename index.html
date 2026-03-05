@@ -9,9 +9,7 @@
 </head>
 <body>
     <div id="game-container">
-        <!-- UI Overlay -->
         <div id="ui-layer">
-            <!-- Player 1 Health -->
             <div class="player-container" id="p1-container">
                 <div class="player-name">BLAZE TOASTER-X</div>
                 <div class="score" id="p1-score">Wins: 0</div>
@@ -25,10 +23,8 @@
                 </div>
             </div>
 
-            <!-- Timer -->
-            <div id="timer">60</div>
+            <div id="timer">75</div>
 
-            <!-- Player 2 Health -->
             <div class="player-container" id="p2-container">
                 <div class="player-name">VOID MICROWAVE-9</div>
                 <div class="score" id="p2-score">Wins: 0</div>
@@ -43,18 +39,16 @@
             </div>
         </div>
 
-        <!-- Game Over Text -->
-        <div id="display-text">Press Space to Start</div>
+        <div id="display-text">Press Start in the Main Menu</div>
 
-        <!-- Main Menu Overlay -->
         <div id="main-menu">
             <h1>Neon Kitchen Brawl</h1>
             <div class="menu-settings">
                 <div class="setting-group">
                     <label for="round-time">Time</label>
                     <select id="round-time">
-                        <option value="30">30s</option>
-                        <option value="60" selected>60s</option>
+                        <option value="45">45s</option>
+                        <option value="75" selected>75s</option>
                         <option value="99">99s</option>
                     </select>
                 </div>
@@ -69,8 +63,8 @@
                 </div>
             </div>
             <div class="menu-buttons">
-                <button id="btn-pvp">Player vs Player</button>
-                <button id="btn-cpu">Player vs CPU</button>
+                <button id="btn-pvp">Duel: Human vs Human</button>
+                <button id="btn-cpu">Duel: Human vs AI</button>
             </div>
             <p style="font-size: 10px;">Controls: P1 (WASD, Space=Att, S=Block, F=Shoot, R=Overdrive) | P2 (Arrows, Enter=Att, Down=Block, Shift=Shoot, /=Overdrive)</p>
         </div>
