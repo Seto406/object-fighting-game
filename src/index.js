@@ -1,55 +1,45 @@
-import { Toaster, Microwave, Particle } from './classes.js';
+import { CursorKnight, GlitchWyrm, Particle } from './classes.js';
 import { rectangularCollision, determineWinner, drawBackground } from './utils.js';
 import { GRAVITY } from './constants.js';
 
 const canvas = document.querySelector('canvas');
 const c = canvas.getContext('2d');
-
 canvas.width = 1024;
 canvas.height = 576;
 
-c.fillRect(0, 0, canvas.width, canvas.height);
-
-// Game State
-let gameMode = 'MENU'; // 'MENU', 'pvp', 'pvcpu'
+let gameMode = 'MENU';
 let gamePaused = false;
 let gameOver = false;
-let timer = 60;
+let timer = 75;
 let timerId;
 let p1Wins = 0;
 let p2Wins = 0;
 let roundsToWin = 2;
-let roundDuration = 60;
+let roundDuration = 75;
 let isRoundTransition = false;
 let hitstop = 0;
 
 const particles = [];
 let screenshake = { x: 0, y: 0, intensity: 0 };
 
-// Player 1 (Toaster)
-const player = new Toaster({
-  position: { x: 200, y: 0 },
+const player = new CursorKnight({
+  position: { x: 180, y: 0 },
   velocity: { x: 0, y: 0 },
-  offset: { x: 0, y: 0 },
-  attackBox: { offset: { x: 60, y: 0 }, width: 100, height: 50 }
+  attackBox: { offset: { x: 54, y: 5 }, width: 95, height: 46 }
 });
 
-// Player 2 (Microwave)
-const enemy = new Microwave({
-  position: { x: 800, y: 100 },
+const enemy = new GlitchWyrm({
+  position: { x: 770, y: 0 },
   velocity: { x: 0, y: 0 },
-  offset: { x: -50, y: 0 },
-  attackBox: { offset: { x: -170, y: 0 }, width: 170, height: 50 }
+  attackBox: { offset: { x: -120, y: 5 }, width: 120, height: 46 }
 });
 
-const keys = {
-  a: { pressed: false },
-  d: { pressed: false },
-  s: { pressed: false },
-  ArrowRight: { pressed: false },
-  ArrowLeft: { pressed: false },
-  ArrowDown: { pressed: false }
-};
+const keys = { a: { pressed: false }, d: { pressed: false }, s: { pressed: false }, ArrowRight: { pressed: false }, ArrowLeft: { pressed: false }, ArrowDown: { pressed: false } };
+
+function updateFocusUI() {
+  document.querySelector('#player-focus').style.width = `${player.focus}%`;
+  document.querySelector('#enemy-focus').style.width = `${enemy.focus}%`;
+}
 
 function decreaseTimer() {
   timerId = setTimeout(() => {
@@ -58,11 +48,7 @@ function decreaseTimer() {
       document.querySelector('#timer').innerHTML = timer;
       decreaseTimer();
     }
-
-    if (timer === 0) {
-      const result = determineWinner({ player, enemy, timerId });
-      handleRoundEnd(result);
-    }
+    if (timer === 0) handleRoundEnd(determineWinner({ player, enemy, timerId }));
   }, 1000);
 }
 
@@ -81,41 +67,31 @@ function togglePause() {
 }
 
 function handleGameOver(result) {
-    document.querySelector('#game-over-result').innerHTML = result;
-    document.querySelector('#game-over-menu').style.display = 'flex';
-    document.querySelector('#pause-btn').style.display = 'none';
+  document.querySelector('#game-over-result').innerHTML = result;
+  document.querySelector('#game-over-menu').style.display = 'flex';
+  document.querySelector('#pause-btn').style.display = 'none';
 }
 
 function handleRoundEnd(result) {
-    if (isRoundTransition || gameOver) return;
+  if (isRoundTransition || gameOver) return;
 
-    if (result === 'Player 1 Wins') {
-        p1Wins++;
-    } else if (result === 'Player 2 Wins') {
-        p2Wins++;
-    }
+  if (result === 'Player 1 Wins') p1Wins++;
+  else if (result === 'Player 2 Wins') p2Wins++;
 
-    document.querySelector('#p1-score').innerHTML = 'Wins: ' + p1Wins;
-    document.querySelector('#p2-score').innerHTML = 'Wins: ' + p2Wins;
+  document.querySelector('#p1-score').innerHTML = `Wins: ${p1Wins}`;
+  document.querySelector('#p2-score').innerHTML = `Wins: ${p2Wins}`;
 
-    if (p1Wins >= roundsToWin || p2Wins >= roundsToWin) {
-        gameOver = true;
-        let matchResult = result;
-        if (p1Wins > p2Wins) matchResult = 'Player 1 Wins Match';
-        else if (p2Wins > p1Wins) matchResult = 'Player 2 Wins Match';
+  if (p1Wins >= roundsToWin || p2Wins >= roundsToWin) {
+    gameOver = true;
+    handleGameOver(p1Wins > p2Wins ? 'Cursor Knight Wins Match' : 'Glitch Wyrm Wins Match');
+    return;
+  }
 
-        handleGameOver(matchResult);
-    } else {
-        isRoundTransition = true;
-        clearTimeout(timerId);
-        document.querySelector('#display-text').style.display = 'flex';
-        document.querySelector('#display-text').innerHTML = result;
-
-        setTimeout(() => {
-            isRoundTransition = false;
-            startRound();
-        }, 2000);
-    }
+  isRoundTransition = true;
+  clearTimeout(timerId);
+  document.querySelector('#display-text').style.display = 'flex';
+  document.querySelector('#display-text').innerHTML = result;
+  setTimeout(() => { isRoundTransition = false; startRound(); }, 1800);
 }
 
 function backToMenu() {
@@ -130,516 +106,233 @@ function backToMenu() {
 }
 
 function startRound() {
-    gamePaused = false;
-    gameOver = false;
-    hitstop = 0;
-    timer = roundDuration;
-    document.querySelector('#timer').innerHTML = timer;
-    document.querySelector('#player-health').style.width = '100%';
-    document.querySelector('#player-health-damage').style.width = '100%';
-    document.querySelector('#enemy-health').style.width = '100%';
-    document.querySelector('#enemy-health-damage').style.width = '100%';
-    document.querySelector('#display-text').style.display = 'none';
-    document.querySelector('#pause-btn').style.display = 'block';
+  gamePaused = false;
+  gameOver = false;
+  hitstop = 0;
+  timer = roundDuration;
+  document.querySelector('#timer').innerHTML = timer;
+  document.querySelector('#display-text').style.display = 'none';
+  document.querySelector('#pause-btn').style.display = 'block';
 
-    player.position = { x: 200, y: 0 };
-    player.health = 100;
-    player.dead = false;
-    player.velocity = { x: 0, y: 0 };
-    player.projectiles = [];
-    player.isBlocking = false;
-    player.isStunned = false;
+  document.querySelector('#player-health').style.width = '100%';
+  document.querySelector('#player-health-damage').style.width = '100%';
+  document.querySelector('#enemy-health').style.width = '100%';
+  document.querySelector('#enemy-health-damage').style.width = '100%';
 
-    enemy.position = { x: 800, y: 100 };
-    enemy.health = 100;
-    enemy.dead = false;
-    enemy.velocity = { x: 0, y: 0 };
-    enemy.projectiles = [];
-    enemy.isBlocking = false;
-    enemy.isStunned = false;
+  Object.assign(player, { position: { x: 180, y: 0 }, velocity: { x: 0, y: 0 }, health: 100, focus: 0, isBlocking: false, isStunned: false, projectiles: [] });
+  Object.assign(enemy, { position: { x: 770, y: 0 }, velocity: { x: 0, y: 0 }, health: 100, focus: 0, isBlocking: false, isStunned: false, projectiles: [] });
 
-    // Reset keys
-    keys.a.pressed = false;
-    keys.d.pressed = false;
-    keys.s.pressed = false;
-    keys.ArrowRight.pressed = false;
-    keys.ArrowLeft.pressed = false;
-    keys.ArrowDown.pressed = false;
+  keys.a.pressed = keys.d.pressed = keys.s.pressed = false;
+  keys.ArrowRight.pressed = keys.ArrowLeft.pressed = keys.ArrowDown.pressed = false;
 
-    clearTimeout(timerId);
-    decreaseTimer();
+  updateFocusUI();
+  clearTimeout(timerId);
+  decreaseTimer();
 }
 
 function initGame(mode) {
-    gameMode = mode;
-
-    // Read settings
-    const timeSelect = document.querySelector('#round-time');
-    roundDuration = parseInt(timeSelect.value);
-    const roundSelect = document.querySelector('#rounds-to-win');
-    roundsToWin = parseInt(roundSelect.value);
-
-    p1Wins = 0;
-    p2Wins = 0;
-    document.querySelector('#p1-score').innerHTML = 'Wins: ' + p1Wins;
-    document.querySelector('#p2-score').innerHTML = 'Wins: ' + p2Wins;
-
-    document.querySelector('#main-menu').style.display = 'none';
-    document.querySelector('#pause-menu').style.display = 'none';
-    document.querySelector('#game-over-menu').style.display = 'none';
-
-    startRound();
+  gameMode = mode;
+  roundDuration = parseInt(document.querySelector('#round-time').value);
+  roundsToWin = parseInt(document.querySelector('#rounds-to-win').value);
+  p1Wins = 0; p2Wins = 0;
+  document.querySelector('#p1-score').innerHTML = 'Wins: 0';
+  document.querySelector('#p2-score').innerHTML = 'Wins: 0';
+  document.querySelector('#main-menu').style.display = 'none';
+  document.querySelector('#pause-menu').style.display = 'none';
+  document.querySelector('#game-over-menu').style.display = 'none';
+  startRound();
 }
 
-// Menu Listeners
-document.querySelector('#btn-pvp').addEventListener('click', () => {
-    initGame('pvp');
-});
-
-document.querySelector('#btn-cpu').addEventListener('click', () => {
-    initGame('pvcpu');
-});
-
+document.querySelector('#btn-pvp').addEventListener('click', () => initGame('pvp'));
+document.querySelector('#btn-cpu').addEventListener('click', () => initGame('pvcpu'));
 document.querySelector('#pause-btn').addEventListener('click', togglePause);
 document.querySelector('#btn-resume').addEventListener('click', togglePause);
 document.querySelector('#btn-menu').addEventListener('click', backToMenu);
-document.querySelector('#btn-rematch').addEventListener('click', () => {
-    initGame(gameMode);
-});
+document.querySelector('#btn-rematch').addEventListener('click', () => initGame(gameMode));
 document.querySelector('#btn-home').addEventListener('click', backToMenu);
 
+function spawnHitParticles(target, color) {
+  for (let i = 0; i < 7; i++) {
+    particles.push(new Particle({
+      position: { x: target.position.x + target.width / 2, y: target.position.y + target.height / 2 },
+      velocity: { x: (Math.random() - 0.5) * 6, y: (Math.random() - 0.5) * 6 },
+      radius: Math.random() * 3 + 1,
+      color
+    }));
+  }
+}
+
+function applyDamage(attacker, defender, damage, isBlock) {
+  const realDamage = isBlock ? Math.max(1, Math.floor(damage * 0.2)) : damage;
+  defender.health = Math.max(0, defender.health - realDamage);
+  attacker.gainFocus(isBlock ? 5 : 11);
+  defender.gainFocus(4);
+  if (!isBlock) {
+    defender.isStunned = true;
+    defender.stunTimer = 12;
+    hitstop = 8;
+    screenshake.intensity = 10;
+  } else {
+    hitstop = 4;
+    screenshake.intensity = 4;
+  }
+}
 
 function animate() {
   window.requestAnimationFrame(animate);
 
-  // Screenshake update
   if (screenshake.intensity > 0) {
-      screenshake.x = (Math.random() - 0.5) * screenshake.intensity;
-      screenshake.y = (Math.random() - 0.5) * screenshake.intensity;
-      screenshake.intensity *= 0.9;
-      if (screenshake.intensity < 0.5) screenshake.intensity = 0;
+    screenshake.x = (Math.random() - 0.5) * screenshake.intensity;
+    screenshake.y = (Math.random() - 0.5) * screenshake.intensity;
+    screenshake.intensity *= 0.88;
+    if (screenshake.intensity < 0.5) screenshake.intensity = 0;
   } else {
-      screenshake.x = 0;
-      screenshake.y = 0;
+    screenshake.x = 0; screenshake.y = 0;
   }
 
-  // Clear canvas before shake to avoid trails
   c.fillStyle = 'black';
   c.fillRect(0, 0, canvas.width, canvas.height);
-
   c.save();
   c.translate(screenshake.x, screenshake.y);
-
-  // Background
   drawBackground(c, canvas);
 
-  // Always draw characters (even in menu)
-  if (gamePaused) {
-    player.draw(c);
-    enemy.draw(c);
+  if (gamePaused) { player.draw(c); enemy.draw(c); c.restore(); return; }
+
+  if (hitstop > 0) {
+    hitstop--;
+    player.draw(c); enemy.draw(c);
+    for (const p of particles) p.draw(c);
     c.restore();
     return;
-  }
-
-  // Hitstop Logic
-  if (hitstop > 0) {
-      hitstop--;
-      player.draw(c);
-      enemy.draw(c);
-
-      for (let i = particles.length - 1; i >= 0; i--) {
-          particles[i].draw(c);
-      }
-      c.restore();
-      return;
   }
 
   player.update(c);
   enemy.update(c);
 
-  // Heat Waves for Toaster
-  if (player instanceof Toaster && player.isAttacking && Math.random() < 0.2) {
-      particles.push(new Particle({
-          position: {
-              x: player.position.x + Math.random() * player.width,
-              y: player.position.y + Math.random() * player.height
-          },
-          velocity: { x: 0, y: -2 },
-          radius: Math.random() * 5 + 2,
-          color: 'rgba(255, 69, 0, 0.5)',
-          type: 'heat'
-      }));
-  }
-
   for (let i = particles.length - 1; i >= 0; i--) {
-    const particle = particles[i];
-    if (particle.opacity <= 0) {
-        particles.splice(i, 1);
-    } else {
-        particle.update(c);
-    }
+    particles[i].update(c);
+    if (particles[i].opacity <= 0) particles.splice(i, 1);
   }
 
-  // End of drawing relative to screenshake
   c.restore();
 
   if (gameMode === 'MENU') {
-      if (player.position.y + player.height < canvas.height - 96) player.velocity.y += GRAVITY;
-      else player.velocity.y = 0;
-
-      if (enemy.position.y + enemy.height < canvas.height - 96) enemy.velocity.y += GRAVITY;
-      else enemy.velocity.y = 0;
-
-      return;
+    if (player.position.y + player.height < canvas.height - 96) player.velocity.y += GRAVITY; else player.velocity.y = 0;
+    if (enemy.position.y + enemy.height < canvas.height - 96) enemy.velocity.y += GRAVITY; else enemy.velocity.y = 0;
+    return;
   }
 
-  if (gameOver) return;
-  if (isRoundTransition) return;
+  if (gameOver || isRoundTransition) return;
 
   player.velocity.x = 0;
   enemy.velocity.x = 0;
 
-  // Player 1 Block
   player.isBlocking = keys.s.pressed && !player.isStunned;
-
-  // Player 1 Movement
   if (!player.isBlocking && !player.isStunned) {
-      if (keys.a.pressed && player.lastKey === 'a') player.velocity.x = -5;
-      else if (keys.d.pressed && player.lastKey === 'd') player.velocity.x = 5;
-      if (keys.a.pressed && !keys.d.pressed) player.velocity.x = -5;
-      if (keys.d.pressed && !keys.a.pressed) player.velocity.x = 5;
+    if (keys.a.pressed) player.velocity.x = -5;
+    if (keys.d.pressed) player.velocity.x = 5;
   }
 
-  // Player 2 Movement / AI
   if (gameMode === 'pvp') {
     enemy.isBlocking = keys.ArrowDown.pressed && !enemy.isStunned;
-
     if (!enemy.isBlocking && !enemy.isStunned) {
-        if (keys.ArrowLeft.pressed && enemy.lastKey === 'ArrowLeft') enemy.velocity.x = -5;
-        else if (keys.ArrowRight.pressed && enemy.lastKey === 'ArrowRight') enemy.velocity.x = 5;
-        if (keys.ArrowLeft.pressed && !keys.ArrowRight.pressed) enemy.velocity.x = -5;
-        if (keys.ArrowRight.pressed && !keys.ArrowLeft.pressed) enemy.velocity.x = 5;
+      if (keys.ArrowLeft.pressed) enemy.velocity.x = -5;
+      if (keys.ArrowRight.pressed) enemy.velocity.x = 5;
     }
-  } else if (gameMode === 'pvcpu') {
-    // Advanced AI Logic
+  } else {
     const dx = player.position.x - enemy.position.x;
-    const distance = Math.abs(dx);
-    const attackRange = enemy.attackBox.width;
-
-    enemy.isBlocking = false;
-
-    // Always Face Player
-    if (player.position.x < enemy.position.x) enemy.lastKey = 'ArrowLeft';
-    else enemy.lastKey = 'ArrowRight';
-
-    // 1. Defensive Reaction (Highest Priority)
-    // Block if player is attacking close by
-    if (player.isAttacking && distance < attackRange + 50 && !enemy.isStunned) {
-        enemy.isBlocking = true;
-    }
-
-    // Block or Jump Incoming Projectiles
-    let projectileIncoming = false;
-    player.projectiles.forEach(proj => {
-        const dist = Math.abs(proj.position.x - enemy.position.x);
-        if (dist < 250 && dist > 0) {
-             if ((proj.velocity.x > 0 && proj.position.x < enemy.position.x) ||
-                 (proj.velocity.x < 0 && proj.position.x > enemy.position.x)) {
-                 projectileIncoming = true;
-             }
-        }
-    });
-
-    if (projectileIncoming && !enemy.isStunned) {
-        if (Math.random() < 0.5) enemy.isBlocking = true;
-        else if (enemy.jumps < 2) enemy.jump();
-    }
-
-    // 2. Movement & Offense
+    const dist = Math.abs(dx);
+    enemy.isBlocking = player.isAttacking && dist < 170 && Math.random() < 0.45;
+    enemy.lastKey = dx < 0 ? 'ArrowLeft' : 'ArrowRight';
     if (!enemy.isBlocking && !enemy.isStunned) {
-        if (distance > 400) {
-            // Far Range: Dash forward or Shoot
-            if (Math.random() < 0.02) enemy.shoot();
-            else if (Math.random() < 0.02) enemy.dash();
-            else {
-                // Move towards player
-                if (player.position.x < enemy.position.x) enemy.velocity.x = -4;
-                else enemy.velocity.x = 4;
-            }
-        } else if (distance > attackRange) {
-            // Mid Range: Approach cautiously
-            if (player.position.x < enemy.position.x) enemy.velocity.x = -3;
-            else enemy.velocity.x = 3;
-
-            if (Math.random() < 0.01) enemy.jump();
-        } else {
-            // Close Range: Attack!
-            if (Math.random() < 0.1) enemy.attack();
-
-            // Micro-spacing
-            if (Math.random() < 0.05) {
-                // Back off slightly
-                 if (player.position.x < enemy.position.x) enemy.velocity.x = 3;
-                 else enemy.velocity.x = -3;
-            }
-        }
+      if (dist > 190) enemy.velocity.x = dx < 0 ? -3.8 : 3.8;
+      else if (Math.random() < 0.07) enemy.attack();
+      if (Math.random() < 0.015) enemy.shoot();
+      if (enemy.focus >= 100 && Math.random() < 0.02) enemy.burst();
     }
   }
 
-  // Detect Collisions - Player 1 Melee
   if (rectangularCollision({ rectangle1: player, rectangle2: enemy }) && player.isAttacking) {
     player.isAttacking = false;
-    let damage = 20;
-
-    // Directional Blocking Check
-    const isBlockingCorrectly = enemy.isBlocking && (
-        (enemy.facing === 'left' && player.position.x < enemy.position.x) ||
-        (enemy.facing === 'right' && player.position.x > enemy.position.x)
-    );
-
-    if (isBlockingCorrectly) damage = 2; // Chip damage
-    enemy.health -= damage;
-
-    // Calculated Pushback
-    const knockbackValue = 20 + (100 - enemy.health) * 0.5;
-    if (player.position.x < enemy.position.x) {
-        enemy.position.x += knockbackValue;
-    } else {
-        enemy.position.x -= knockbackValue;
-    }
-
-    // Stun & Hitstop
-    if (!isBlockingCorrectly) {
-        enemy.isStunned = true;
-        enemy.stunTimer = 15;
-        hitstop = 10; // Freeze frame
-        screenshake.intensity = 15;
-    } else {
-        hitstop = 5; // Reduced hitstop on block
-        screenshake.intensity = 5;
-    }
-
-    // Particles
-    for (let i = 0; i < 8; i++) {
-        particles.push(new Particle({
-            position: {
-                x: enemy.position.x + enemy.width / 2,
-                y: enemy.position.y + enemy.height / 2
-            },
-            velocity: {
-                x: (Math.random() - 0.5) * 6,
-                y: (Math.random() - 0.5) * 6
-            },
-            radius: Math.random() * 3,
-            color: enemy.color,
-            type: 'spark'
-        }));
-    }
-
-    if (enemy.health < 0) enemy.health = 0;
-    document.querySelector('#enemy-health').style.width = enemy.health + '%';
-    document.querySelector('#enemy-health-damage').style.width = enemy.health + '%';
+    const blocked = enemy.isBlocking && ((enemy.facing === 'left' && player.position.x < enemy.position.x) || (enemy.facing === 'right' && player.position.x > enemy.position.x));
+    applyDamage(player, enemy, 18, blocked);
+    spawnHitParticles(enemy, '#89f8ff');
+    document.querySelector('#enemy-health').style.width = `${enemy.health}%`;
+    document.querySelector('#enemy-health-damage').style.width = `${enemy.health}%`;
   }
 
-  // Detect Collisions - Player 2 Melee
   if (rectangularCollision({ rectangle1: enemy, rectangle2: player }) && enemy.isAttacking) {
     enemy.isAttacking = false;
-    let damage = 20;
-
-    const isBlockingCorrectly = player.isBlocking && (
-        (player.facing === 'left' && enemy.position.x < player.position.x) ||
-        (player.facing === 'right' && enemy.position.x > player.position.x)
-    );
-
-    if (isBlockingCorrectly) damage = 2;
-    player.health -= damage;
-
-    // Calculated Pushback
-    const knockbackValue = 20 + (100 - player.health) * 0.5;
-    if (enemy.position.x < player.position.x) {
-        player.position.x += knockbackValue;
-    } else {
-        player.position.x -= knockbackValue;
-    }
-
-    // Stun & Hitstop
-    if (!isBlockingCorrectly) {
-        player.isStunned = true;
-        player.stunTimer = 15;
-        hitstop = 10;
-        screenshake.intensity = 15;
-    } else {
-        hitstop = 5;
-        screenshake.intensity = 5;
-    }
-
-    // Particles
-    for (let i = 0; i < 8; i++) {
-        particles.push(new Particle({
-            position: {
-                x: player.position.x + player.width / 2,
-                y: player.position.y + player.height / 2
-            },
-            velocity: {
-                x: (Math.random() - 0.5) * 6,
-                y: (Math.random() - 0.5) * 6
-            },
-            radius: Math.random() * 3,
-            color: player.color,
-            type: 'crumb'
-        }));
-    }
-
-    if (player.health < 0) player.health = 0;
-    document.querySelector('#player-health').style.width = player.health + '%';
-    document.querySelector('#player-health-damage').style.width = player.health + '%';
+    const blocked = player.isBlocking && ((player.facing === 'left' && enemy.position.x < player.position.x) || (player.facing === 'right' && enemy.position.x > player.position.x));
+    applyDamage(enemy, player, 18, blocked);
+    spawnHitParticles(player, '#ff72e0');
+    document.querySelector('#player-health').style.width = `${player.health}%`;
+    document.querySelector('#player-health-damage').style.width = `${player.health}%`;
   }
 
-  // Projectile Collisions - Player 1 vs Enemy
   for (let i = player.projectiles.length - 1; i >= 0; i--) {
-    const projectile = player.projectiles[i];
-    if (rectangularCollision({ rectangle1: projectile, rectangle2: enemy })) {
+    const proj = player.projectiles[i];
+    if (rectangularCollision({ rectangle1: proj, rectangle2: enemy })) {
       player.projectiles.splice(i, 1);
-      let damage = 10;
-
-      const isBlockingCorrectly = enemy.isBlocking && (
-          (projectile.velocity.x > 0 && enemy.facing === 'left') ||
-          (projectile.velocity.x < 0 && enemy.facing === 'right')
-      );
-
-      if (isBlockingCorrectly) damage = 1;
-      enemy.health -= damage;
-
-      // Minor Hitstop for projectiles
-      hitstop = 5;
-
-      if (enemy.health < 0) enemy.health = 0;
-      document.querySelector('#enemy-health').style.width = enemy.health + '%';
-      document.querySelector('#enemy-health-damage').style.width = enemy.health + '%';
+      const blocked = enemy.isBlocking && ((proj.velocity.x > 0 && enemy.facing === 'left') || (proj.velocity.x < 0 && enemy.facing === 'right'));
+      applyDamage(player, enemy, proj.type === 'burst' ? 22 : 10, blocked);
+      spawnHitParticles(enemy, '#9adfff');
+      document.querySelector('#enemy-health').style.width = `${enemy.health}%`;
+      document.querySelector('#enemy-health-damage').style.width = `${enemy.health}%`;
     }
   }
 
-  // Projectile Collisions - Enemy vs Player
   for (let i = enemy.projectiles.length - 1; i >= 0; i--) {
-    const projectile = enemy.projectiles[i];
-    if (rectangularCollision({ rectangle1: projectile, rectangle2: player })) {
+    const proj = enemy.projectiles[i];
+    if (rectangularCollision({ rectangle1: proj, rectangle2: player })) {
       enemy.projectiles.splice(i, 1);
-      let damage = 10;
-
-      const isBlockingCorrectly = player.isBlocking && (
-          (projectile.velocity.x > 0 && player.facing === 'left') ||
-          (projectile.velocity.x < 0 && player.facing === 'right')
-      );
-
-      if (isBlockingCorrectly) damage = 1;
-      player.health -= damage;
-
-      hitstop = 5;
-
-      if (player.health < 0) player.health = 0;
-      document.querySelector('#player-health').style.width = player.health + '%';
-      document.querySelector('#player-health-damage').style.width = player.health + '%';
+      const blocked = player.isBlocking && ((proj.velocity.x > 0 && player.facing === 'left') || (proj.velocity.x < 0 && player.facing === 'right'));
+      applyDamage(enemy, player, proj.type === 'burst' ? 22 : 10, blocked);
+      spawnHitParticles(player, '#ff84e8');
+      document.querySelector('#player-health').style.width = `${player.health}%`;
+      document.querySelector('#player-health-damage').style.width = `${player.health}%`;
     }
   }
 
-  if (enemy.health <= 0 || player.health <= 0) {
-    const result = determineWinner({ player, enemy, timerId });
-    handleRoundEnd(result);
-  }
+  updateFocusUI();
+
+  if (player.health <= 0 || enemy.health <= 0) handleRoundEnd(determineWinner({ player, enemy, timerId }));
 }
 
 animate();
 
 window.addEventListener('keydown', (event) => {
   if (gameMode === 'MENU') return;
-
-  if (event.key === 'Escape') {
-    togglePause();
-  }
-
+  if (event.key === 'Escape') togglePause();
   if (gamePaused || isRoundTransition) return;
-
-  if (gameOver) {
-      if (event.key === ' ') {
-          initGame(gameMode);
-      }
-      return;
-  }
+  if (gameOver && event.key === ' ') return initGame(gameMode);
 
   switch (event.key) {
-    // Player 1
-    case 'd':
-      keys.d.pressed = true;
-      player.lastKey = 'd';
-      break;
-    case 'a':
-      keys.a.pressed = true;
-      player.lastKey = 'a';
-      break;
-    case 'w':
-      if (!player.isBlocking) player.jump();
-      break;
-    case 's':
-      keys.s.pressed = true;
-      break;
-    case 'e':
-      if (!player.isBlocking) player.dash();
-      break;
-    case ' ':
-      if (!player.isBlocking) player.attack();
-      break;
-    case 'f':
-      if (!player.isBlocking) player.shoot();
-      break;
+    case 'a': keys.a.pressed = true; player.lastKey = 'a'; break;
+    case 'd': keys.d.pressed = true; player.lastKey = 'd'; break;
+    case 'w': if (!player.isBlocking) player.jump(); break;
+    case 's': keys.s.pressed = true; break;
+    case ' ': if (!player.isBlocking) player.attack(); break;
+    case 'f': if (!player.isBlocking) player.shoot(); break;
+    case 'q': if (player.burst()) screenshake.intensity = 12; break;
 
-    // Player 2
-    case 'ArrowRight':
-      keys.ArrowRight.pressed = true;
-      enemy.lastKey = 'ArrowRight';
-      break;
-    case 'ArrowLeft':
-      keys.ArrowLeft.pressed = true;
-      enemy.lastKey = 'ArrowLeft';
-      break;
-    case 'ArrowUp':
-      if (gameMode === 'pvp' && !enemy.isBlocking) enemy.jump();
-      break;
-    case 'ArrowDown':
-       // Used for blocking now
-       keys.ArrowDown.pressed = true;
-       break;
-    case '.':
-       if (gameMode === 'pvp' && !enemy.isBlocking) enemy.dash();
-       break;
-    case 'Enter':
-      if (gameMode === 'pvp' && !enemy.isBlocking) enemy.attack();
-      break;
-    case 'Shift':
-      if (gameMode === 'pvp' && !enemy.isBlocking) enemy.shoot();
-      break;
+    case 'ArrowLeft': keys.ArrowLeft.pressed = true; enemy.lastKey = 'ArrowLeft'; break;
+    case 'ArrowRight': keys.ArrowRight.pressed = true; enemy.lastKey = 'ArrowRight'; break;
+    case 'ArrowUp': if (gameMode === 'pvp' && !enemy.isBlocking) enemy.jump(); break;
+    case 'ArrowDown': keys.ArrowDown.pressed = true; break;
+    case 'Enter': if (gameMode === 'pvp' && !enemy.isBlocking) enemy.attack(); break;
+    case 'Shift': if (gameMode === 'pvp' && !enemy.isBlocking) enemy.shoot(); break;
+    case 'm': if (gameMode === 'pvp' && enemy.burst()) screenshake.intensity = 12; break;
   }
 });
 
 window.addEventListener('keyup', (event) => {
   switch (event.key) {
-    case 'd':
-        keys.d.pressed = false;
-        if (keys.a.pressed) player.lastKey = 'a';
-        break;
-    case 'a':
-        keys.a.pressed = false;
-        if (keys.d.pressed) player.lastKey = 'd';
-        break;
+    case 'a': keys.a.pressed = false; break;
+    case 'd': keys.d.pressed = false; break;
     case 's': keys.s.pressed = false; break;
-
-    case 'ArrowRight':
-        keys.ArrowRight.pressed = false;
-        if (keys.ArrowLeft.pressed) enemy.lastKey = 'ArrowLeft';
-        break;
-    case 'ArrowLeft':
-        keys.ArrowLeft.pressed = false;
-        if (keys.ArrowRight.pressed) enemy.lastKey = 'ArrowRight';
-        break;
+    case 'ArrowLeft': keys.ArrowLeft.pressed = false; break;
+    case 'ArrowRight': keys.ArrowRight.pressed = false; break;
     case 'ArrowDown': keys.ArrowDown.pressed = false; break;
   }
 });
