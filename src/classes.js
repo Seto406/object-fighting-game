@@ -97,6 +97,10 @@ export class Fighter {
     this.isStunned = false;
     this.stunTimer = 0;
     this.attackCooldown = 0;
+    this.projectileType = 'normal';
+    this.energy = 0;
+    this.isOverdrive = false;
+    this.overdriveTimer = 0;
 
     this.projectiles = [];
     this.jumps = 0;
@@ -112,7 +116,23 @@ export class Fighter {
       if (this.stunTimer <= 0) this.isStunned = false;
     }
     if (this.attackCooldown > 0) this.attackCooldown--;
-    if (this.burstCooldown > 0) this.burstCooldown--;
+    if (this.isOverdrive) {
+        this.overdriveTimer--;
+        if (this.overdriveTimer <= 0) this.isOverdrive = false;
+    }
+    if (this.dashCooldown > 0) this.dashCooldown--;
+    if (this.isDashing) {
+        this.dashTimer--;
+        if (this.dashTimer <= 0) {
+            this.isDashing = false;
+            this.velocity.x = 0;
+        }
+    }
+
+    // Determine direction
+    let currentDir = this.facing;
+    if (this.lastKey === 'd' || this.lastKey === 'ArrowRight') currentDir = 'right';
+    else if (this.lastKey === 'a' || this.lastKey === 'ArrowLeft') currentDir = 'left';
 
     if (this.lastKey === 'd' || this.lastKey === 'ArrowRight') this.facing = 'right';
     if (this.lastKey === 'a' || this.lastKey === 'ArrowLeft') this.facing = 'left';
@@ -169,27 +189,67 @@ export class Fighter {
     }
   }
 
-  gainFocus(amount) {
-    this.focus = Math.min(100, this.focus + amount);
+  attack() {
+    if (this.isStunned || this.isAttacking || this.attackCooldown > 0) return;
+    this.isAttacking = true;
+    this.attackCooldown = this.isOverdrive ? 12 : 20;
+    setTimeout(() => {
+      this.isAttacking = false;
+    }, 100);
   }
 
-  burst() {
-    if (this.focus < 100 || this.burstCooldown > 0 || this.isStunned) return false;
-    this.focus = 0;
-    this.burstCooldown = 180;
-    const dir = this.facing === 'left' ? -1 : 1;
-    this.projectiles.push(new Projectile({
-      position: { x: this.position.x + (dir > 0 ? this.width : -10), y: this.position.y + this.height / 2 - 10 },
-      velocity: { x: dir * 13, y: 0 },
-      width: 34,
-      height: 20,
-      color: '#ffffff',
-      type: 'burst'
-    }));
+
+  gainEnergy(amount) {
+    this.energy = Math.min(100, this.energy + amount);
+  }
+
+  activateOverdrive() {
+    if (this.energy < 100 || this.isOverdrive || this.isStunned) return false;
+    this.energy = 0;
+    this.isOverdrive = true;
+    this.overdriveTimer = 240;
     return true;
   }
 
-  jump() { if (!this.isStunned && this.jumps < this.MAX_JUMPS) { this.velocity.y = -18; this.jumps++; } }
+  switchSprite(sprite) {
+    if (!this.sprites) return;
+    if (this.image === this.sprites[sprite].image) return;
+    this.image = this.sprites[sprite].image;
+    this.framesMax = this.sprites[sprite].framesMax;
+    this.framesCurrent = 0;
+  }
+
+  draw(c) {
+    if (this.isOverdrive) {
+      c.save();
+      c.globalAlpha = 0.35;
+      c.fillStyle = '#7df9ff';
+      c.fillRect(this.position.x - 12, this.position.y - 12, this.width + 24, this.height + 24);
+      c.restore();
+    }
+
+    // Fallback to rectangle if no image
+    if (!this.image.src || this.image.src.endsWith('undefined') || !this.sprites) {
+      c.fillStyle = this.color;
+      c.fillRect(this.position.x, this.position.y, this.width, this.height);
+
+      // Attack box visual for debugging
+      if (this.isAttacking) {
+        c.fillStyle = 'green';
+        c.fillRect(
+          this.attackBox.position.x,
+          this.attackBox.position.y,
+          this.attackBox.width,
+          this.attackBox.height
+        );
+      }
+
+      // Visual for Blocking
+      if (this.isBlocking) {
+          c.strokeStyle = 'blue';
+          c.lineWidth = 5;
+          c.strokeRect(this.position.x - 5, this.position.y - 5, this.width + 10, this.height + 10);
+      }
 
   attack() {
     if (this.isStunned || this.isAttacking || this.attackCooldown > 0) return;
@@ -199,17 +259,36 @@ export class Fighter {
   }
 
   shoot() {
-    if (this.isStunned || this.isShooting) return;
-    const dir = this.facing === 'left' ? -1 : 1;
-    this.projectiles.push(new Projectile({
-      position: { x: this.position.x + (dir > 0 ? this.width : -28), y: this.position.y + this.height / 2 - 6 },
-      velocity: { x: dir * 9, y: 0 },
-      width: 26,
-      height: 12,
-      color: '#fff'
-    }));
+     if (this.isShooting || this.isStunned) return;
+
+    let velocityX = 10;
+    // P1 defaults to facing right, P2 defaults to facing left if no key pressed?
+    // We can check if lastKey is 'a' or 'ArrowLeft' -> Left
+    if (this.lastKey === 'a' || this.lastKey === 'ArrowLeft') {
+        velocityX = -10;
+    }
+    // If no lastKey is set yet (start of game), we might need a default.
+    // P1 (Toaster) usually starts on left side (x=200), P2 (Microwave) on right (x=800).
+    // So if lastKey is undefined:
+    if (!this.lastKey) {
+        if (this.position.x > 512) velocityX = -10; // Assume right side player faces left
+    }
+
+    const projectile = new Projectile({
+        position: {
+            x: this.position.x + (velocityX > 0 ? this.width : -40),
+            y: this.position.y + this.height / 2 - 10
+        },
+        velocity: { x: this.isOverdrive ? velocityX * 1.3 : velocityX, y: 0 },
+        color: this.projectileColor || 'black',
+        width: 40,
+        height: 10,
+        type: this.projectileType
+    });
+    this.projectiles.push(projectile);
+
     this.isShooting = true;
-    setTimeout(() => this.isShooting = false, 460);
+    setTimeout(() => this.isShooting = false, this.isOverdrive ? 280 : 500);
   }
 }
 

@@ -14,51 +14,59 @@ export function determineWinner({ player, enemy, timerId }) {
 }
 
 export function drawBackground(c, canvas) {
-  const t = Date.now() * 0.001;
-  const g = c.createLinearGradient(0, 0, 0, canvas.height);
-  g.addColorStop(0, '#0b1232');
-  g.addColorStop(0.6, '#0d1b3f');
-  g.addColorStop(1, '#0b0d1f');
-  c.fillStyle = g;
-  c.fillRect(0, 0, canvas.width, canvas.height);
+    const t = Date.now() * 0.001;
+    const gradient = c.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, '#100b2b');
+    gradient.addColorStop(0.5, '#1c1451');
+    gradient.addColorStop(1, '#0a0720');
+    c.fillStyle = gradient;
+    c.fillRect(0, 0, canvas.width, canvas.height);
 
-  for (let i = 0; i < 75; i++) {
-    const x = (i * 121) % canvas.width;
-    const y = (i * 73) % 250;
-    const a = 0.3 + Math.sin(t * 2 + i) * 0.25;
-    c.fillStyle = `rgba(180,230,255,${a})`;
-    c.fillRect(x, y, 2, 2);
-  }
+    for (let i = 0; i < 40; i++) {
+        const x = (i * 137) % canvas.width;
+        const y = 40 + ((i * 83) % 200);
+        const pulse = 0.3 + Math.sin(t * 2 + i) * 0.2;
+        c.fillStyle = `rgba(255,255,255,${pulse})`;
+        c.fillRect(x, y, 2, 2);
+    }
 
-  c.fillStyle = '#191a3f';
-  c.fillRect(0, canvas.height - 170, canvas.width, 74);
+    c.fillStyle = '#191032';
+    c.fillRect(0, canvas.height - 180, canvas.width, 84);
 
-  c.fillStyle = '#0a122e';
-  c.fillRect(0, canvas.height - 96, canvas.width, 96);
+    c.fillStyle = '#0b0f2a';
+    c.fillRect(0, canvas.height - 96, canvas.width, 96);
 
-  c.save();
-  c.strokeStyle = '#64d9ff';
-  c.globalAlpha = 0.25;
-  c.beginPath();
-  for (let y = canvas.height - 96; y <= canvas.height; y += 16) {
-    c.moveTo(0, y);
-    c.lineTo(canvas.width, y);
-  }
-  for (let x = 0; x <= canvas.width; x += 85) {
-    c.moveTo(x, canvas.height - 96);
-    c.lineTo(x + (x - canvas.width / 2) * 1.2, canvas.height);
-  }
-  c.stroke();
-  c.restore();
+    c.save();
+    c.strokeStyle = '#00cfff';
+    c.globalAlpha = 0.22;
+    c.lineWidth = 1;
+    c.beginPath();
+    for (let y = canvas.height - 96; y < canvas.height; y += 18) {
+        c.moveTo(0, y);
+        c.lineTo(canvas.width, y);
+    }
+    for (let x = 0; x <= canvas.width; x += 80) {
+        c.moveTo(x, canvas.height - 96);
+        const perspectiveOffset = (x - canvas.width / 2) * 1.25;
+        c.lineTo(x + perspectiveOffset, canvas.height);
+    }
+    c.stroke();
+    c.restore();
 
-  c.fillStyle = '#2a2f5d';
-  c.fillRect(canvas.width / 2 - 180, 90, 360, 190);
-  c.strokeStyle = '#9ce6ff';
-  c.lineWidth = 4;
-  c.strokeRect(canvas.width / 2 - 180, 90, 360, 190);
+    const crowdY = canvas.height - 190;
+    for (let i = 0; i < 24; i++) {
+        const x = i * 45;
+        const bob = Math.sin(t * 3 + i) * 2;
+        c.fillStyle = i % 2 === 0 ? '#ff4de1' : '#3df8ff';
+        c.fillRect(x, crowdY + bob, 14, 16);
+    }
 
-  for (let i = 0; i < 28; i++) {
-    c.fillStyle = i % 2 ? '#8ee5ff' : '#ff8cee';
-    c.fillRect(i * 38, canvas.height - 190 + Math.sin(t * 3 + i) * 2, 12, 14);
-  }
+    c.fillStyle = '#2b1d55';
+    c.fillRect(canvas.width / 2 - 170, 76, 340, 220);
+    c.strokeStyle = '#8ffffd';
+    c.lineWidth = 4;
+    c.strokeRect(canvas.width / 2 - 170, 76, 340, 220);
+
+    c.fillStyle = 'rgba(255, 255, 255, 0.10)';
+    c.fillRect(canvas.width / 2 - 150, 90, 300, 40);
 }
