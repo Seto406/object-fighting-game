@@ -5,7 +5,7 @@
 }
 
 body {
-    background: radial-gradient(circle, #2a2a2a 0%, #000 100%);
+    background: radial-gradient(circle, #1e1538 0%, #07050f 65%, #000 100%);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -46,6 +46,7 @@ canvas {
     display: flex;
     flex-direction: column;
     width: 40%;
+    gap: 6px;
 }
 
 #p1-container {
@@ -74,6 +75,25 @@ canvas {
     box-shadow: 0 4px 0 rgba(0,0,0,0.5);
     transform: skewX(-20deg);
     overflow: hidden;
+}
+
+.energy-wrapper {
+    width: 90%;
+    height: 10px;
+    border: 2px solid #c8f9ff;
+    background: rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 10px rgba(0, 245, 255, 0.3);
+}
+
+#p2-container .energy-wrapper {
+    align-self: flex-end;
+}
+
+.energy-bar {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(to right, #00bcd4, #00ffe7 40%, #f6ff00);
+    transition: width 0.15s linear;
 }
 
 .health-bar-bg {

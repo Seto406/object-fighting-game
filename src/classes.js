@@ -216,6 +216,9 @@ export class Fighter extends Sprite {
     this.stunTimer = 0;
     this.attackCooldown = 0;
     this.projectileType = 'normal';
+    this.energy = 0;
+    this.isOverdrive = false;
+    this.overdriveTimer = 0;
 
     if (this.sprites) {
       for (const sprite in this.sprites) {
@@ -235,6 +238,10 @@ export class Fighter extends Sprite {
     }
 
     if (this.attackCooldown > 0) this.attackCooldown--;
+    if (this.isOverdrive) {
+        this.overdriveTimer--;
+        if (this.overdriveTimer <= 0) this.isOverdrive = false;
+    }
     if (this.dashCooldown > 0) this.dashCooldown--;
     if (this.isDashing) {
         this.dashTimer--;
@@ -322,10 +329,23 @@ export class Fighter extends Sprite {
   attack() {
     if (this.isStunned || this.isAttacking || this.attackCooldown > 0) return;
     this.isAttacking = true;
-    this.attackCooldown = 20;
+    this.attackCooldown = this.isOverdrive ? 12 : 20;
     setTimeout(() => {
       this.isAttacking = false;
     }, 100);
+  }
+
+
+  gainEnergy(amount) {
+    this.energy = Math.min(100, this.energy + amount);
+  }
+
+  activateOverdrive() {
+    if (this.energy < 100 || this.isOverdrive || this.isStunned) return false;
+    this.energy = 0;
+    this.isOverdrive = true;
+    this.overdriveTimer = 240;
+    return true;
   }
 
   switchSprite(sprite) {
@@ -337,6 +357,14 @@ export class Fighter extends Sprite {
   }
 
   draw(c) {
+    if (this.isOverdrive) {
+      c.save();
+      c.globalAlpha = 0.35;
+      c.fillStyle = '#7df9ff';
+      c.fillRect(this.position.x - 12, this.position.y - 12, this.width + 24, this.height + 24);
+      c.restore();
+    }
+
     // Fallback to rectangle if no image
     if (!this.image.src || this.image.src.endsWith('undefined') || !this.sprites) {
       c.fillStyle = this.color;
@@ -392,7 +420,7 @@ export class Fighter extends Sprite {
             x: this.position.x + (velocityX > 0 ? this.width : -40),
             y: this.position.y + this.height / 2 - 10
         },
-        velocity: { x: velocityX, y: 0 },
+        velocity: { x: this.isOverdrive ? velocityX * 1.3 : velocityX, y: 0 },
         color: this.projectileColor || 'black',
         width: 40,
         height: 10,
@@ -401,7 +429,7 @@ export class Fighter extends Sprite {
     this.projectiles.push(projectile);
 
     this.isShooting = true;
-    setTimeout(() => this.isShooting = false, 500); // 0.5s Cooldown
+    setTimeout(() => this.isShooting = false, this.isOverdrive ? 280 : 500);
   }
 }
 
